@@ -32,10 +32,16 @@
     },
     "scope": {
       "type": "object",
-      "required": ["fixture_kind", "record_count", "proves", "does_not_prove"],
+      "required": ["population_choice", "current_phase", "fixture_kind", "record_count", "selection_policy", "full_population_followup_required", "decision_source", "rationale", "proves", "does_not_prove"],
       "properties": {
+        "population_choice": {"type": ["string", "null"], "enum": [null, "GOVERNED_SAMPLE_50", "FULL_POPULATION", "PHASED_50_THEN_FULL", "CUSTOM_GOVERNED_SAMPLE"]},
+        "current_phase": {"type": ["string", "null"], "enum": [null, "SAMPLE", "FULL_POPULATION"]},
         "fixture_kind": {"type": ["string", "null"]},
         "record_count": {"type": ["integer", "null"], "minimum": 1},
+        "selection_policy": {"type": ["string", "null"]},
+        "full_population_followup_required": {"type": ["boolean", "null"]},
+        "decision_source": {"type": ["string", "null"]},
+        "rationale": {"type": ["string", "null"]},
         "proves": {"type": "array", "items": {"type": "string"}},
         "does_not_prove": {"type": "array", "items": {"type": "string"}}
       },
@@ -162,14 +168,105 @@
   },
   "allOf": [
     {
+      "if": {"properties": {"scope": {"properties": {"population_choice": {"const": "GOVERNED_SAMPLE_50"}}}}},
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "current_phase": {"const": "SAMPLE"},
+              "record_count": {"const": 50},
+              "full_population_followup_required": {"const": false}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"scope": {"properties": {"population_choice": {"const": "FULL_POPULATION"}}}}},
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "current_phase": {"const": "FULL_POPULATION"},
+              "full_population_followup_required": {"const": false}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "population_choice": {"const": "PHASED_50_THEN_FULL"},
+              "current_phase": {"const": "SAMPLE"}
+            },
+            "required": ["population_choice", "current_phase"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "record_count": {"const": 50},
+              "full_population_followup_required": {"const": true}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"scope": {"properties": {"population_choice": {"const": "CUSTOM_GOVERNED_SAMPLE"}}}}},
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "current_phase": {"const": "SAMPLE"},
+              "full_population_followup_required": {"const": false}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "population_choice": {"const": "PHASED_50_THEN_FULL"},
+              "current_phase": {"const": "FULL_POPULATION"}
+            },
+            "required": ["population_choice", "current_phase"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "full_population_followup_required": {"const": false}
+            }
+          }
+        }
+      }
+    },
+    {
       "if": {"properties": {"status": {"const": "APPROVED"}}},
       "then": {
         "properties": {
           "module_id": {"type": "string"},
           "scope": {
             "properties": {
-              "fixture_kind": {"type": "string"},
+              "population_choice": {"type": "string"},
+              "current_phase": {"type": "string"},
+              "fixture_kind": {"type": "string", "minLength": 1},
               "record_count": {"type": "integer"},
+              "selection_policy": {"type": "string", "minLength": 1},
+              "full_population_followup_required": {"type": "boolean"},
+              "decision_source": {"type": "string", "minLength": 1},
+              "rationale": {"type": "string", "minLength": 1},
               "proves": {"minItems": 1},
               "does_not_prove": {"minItems": 1}
             }

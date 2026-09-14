@@ -1,4 +1,4 @@
-profile_version: 1
+profile_version: 2
 status: UNAPPROVED_TEMPLATE
 module_id: null
 business_outcome: null
@@ -8,11 +8,22 @@ semantic_runtime: null
 semantic_implementation: null
 selected_adapter: null
 cluster_execution: null
+local_tieout_requested: null
+tieout_population:
+  choice: null
+  current_phase: null
+  record_count: null
+  selection_policy: null
+  full_population_followup_required: null
+  decision_source: null
+  rationale: null
+  approved_by: null
 human_approval_required:
   - migration_intent
   - prd
   - specification
   - architecture_decision
+  - tieout_population_choice
   - oracle_or_tolerance_change
   - repair_integration
   - merge
@@ -20,4 +31,5 @@ human_approval_required:
   - learning_promotion
 notes:
   - Populate this profile only through the interview skill and human approval.
-  - Do not infer business intent, expected results, tolerances, or runtime from source code alone.
+  - Do not infer business intent, expected results, tolerances, tie-out population, or runtime from source code alone.
+  - If local tie-out is requested, interview must present the approved population-choice menu and stop for human selection.

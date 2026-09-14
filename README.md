@@ -154,12 +154,21 @@ The prompt is only the router. The selected skill owns the procedure, artifact, 
 
 ## How parity and tie-out are created
 
-Copying SAS files and reference CSVs into `intake/` does not immediately run parity. The workflow must first approve an executable evidence contract:
+Copying SAS files and reference CSVs into `intake/` does not immediately run parity. If the user requests tie-out, `interview` first presents a human choice:
+
+| Choice | Meaning |
+|---|---|
+| `GOVERNED_SAMPLE_50` | Fast, deterministic 50-record demonstration; PASS proves only the selected governed sample. |
+| `FULL_POPULATION` | Compare every eligible keyed record; requires a complete oracle plus bounded compute/runtime feasibility. |
+| `PHASED_50_THEN_FULL` | Run the 50-record gate first, then require a separate full-population contract and approval. |
+| `CUSTOM_GOVERNED_SAMPLE` | Use a human-selected count with deterministic selection and mandatory coverage assertions. |
+
+The agent recommends an option with trade-offs but never selects it. The workflow must then approve an executable evidence contract:
 
 ```text
-interview identifies the oracle and proof goal
+interview records the human-selected population, current phase, oracle, and proof goal
     ↓
-specify freezes intake/oracle provenance, keys, coverage policy, metrics, tolerance rationale, producer, and proof boundary
+specify freezes population/follow-up obligations, intake/oracle provenance, keys, coverage policy, metrics, tolerance rationale, producer, and proof boundary
     ↓
 generate creates the Python semantic core and actual-output producer
     ↓
@@ -170,9 +179,17 @@ human approves the exact tie-out contract and hashes
 validate runs the generic keyed tie-out and emits detailed result, human-readable summary, and PASS / FAIL / BLOCKED evidence
 ```
 
-The active `validate` skill invokes `python3 scripts/project.py tieout --run-id <run-id>` internally. Users should continue using Copilot prompts rather than running this helper manually. The runner is module-neutral: it reads only the approved `config/tieout.yaml`; verifies intake, selector, source, input, fixture, and oracle hashes; requires mandatory coverage assertions and the selected-key digest; runs the declared producer without a shell; detects duplicate/missing/extra keys; applies every configured comparison; suppresses raw mismatch values; and writes schema-valid `tieout_result.json`, generated `tieout_summary.md`, and `evidence.json`.
+The active `validate` skill invokes `python3 scripts/project.py tieout --run-id <run-id> --attempt-id <attempt-id>` internally. Users should continue using Copilot prompts rather than running this helper manually. The runner is module-neutral: it reads only the approved `config/tieout.yaml`; verifies intake, selector, source, input, fixture, and oracle hashes; requires mandatory coverage assertions and the selected-key digest; runs the declared producer without a shell; detects duplicate/missing/extra keys; applies every configured comparison; suppresses raw mismatch values; and writes schema-valid `tieout_result.json`, generated `tieout_summary.md`, and `evidence.json`.
 
-See [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md). An unapproved or incomplete tie-out contract must return `BLOCKED`; unit tests alone cannot be presented as parity.
+See [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md). An unapproved population choice or incomplete tie-out contract must return `BLOCKED`; unit tests alone cannot be presented as parity. A phased 50-record PASS keeps the full-population gate open.
+
+A concise Copilot start request is:
+
+```text
+/start-migration new <MODULE-ID>
+
+Inspect the private files under intake. I want SAS-to-Python migration with keyed tie-out. Present the tie-out population choices, recommend one with trade-offs, execute exactly one authorized skill, and stop at every human gate.
+```
 
 ## Canonical artifacts
 

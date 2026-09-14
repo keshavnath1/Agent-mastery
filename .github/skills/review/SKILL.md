@@ -23,8 +23,8 @@ Commit, stage contract, approved tie-out contract, detailed result, generated su
 2. Verify the recorded commit plus intake, selector/source/input, fixture, oracle, contract, and runner hashes.
 3. Re-run the frozen deterministic command in fresh checker context without repairing anything.
 4. Compare the reproduced `tieout_result.json`, generated summary, and evidence scoreboard with the reviewed artifacts; explain any nondeterministic provenance fields.
-5. Verify mandatory fixture coverage, keyed counts, metric/tolerance summaries, decision rationale, retry history, limitations, and proof boundary.
-6. Record ACCEPT, REJECT, or BLOCKED with the reviewed and reproduced artifact hashes.
+5. Verify the interview-selected population, current phase, record count, selection policy, full-population follow-up obligation, mandatory fixture coverage, keyed counts, metric/tolerance summaries, decision rationale, retry history, limitations, and proof boundary across the contract, result, summary, evidence, and SPEC.
+6. For `PHASED_50_THEN_FULL` sample evidence, accept or reject only the sample gate and explicitly retain the later full-population obligation. Record ACCEPT, REJECT, or BLOCKED with the reviewed and reproduced artifact hashes.
 
 ## Output artifact
 
@@ -32,11 +32,11 @@ Commit, stage contract, approved tie-out contract, detailed result, generated su
 
 ## Verification
 
-Review includes the command and return code, commit, protected hashes, reproduced result/summary/evidence references, parity scoreboard, limitations, retry lineage, and explicit decision.
+Review includes the command and return code, commit, protected hashes, reproduced result/summary/evidence references, selected population and phase, follow-up obligation, parity scoreboard, limitations, retry lineage, and explicit decision.
 
 ## Boundaries and red flags
 
-Do not repair while reviewing or accept generated claims without rerunning checks. Red flags include undocumented assumptions, missing provenance, changed protected paths, self-authored expected output, skipped gates, and unsupported completion claims.
+Do not repair while reviewing or accept generated claims without rerunning checks. Red flags include an inferred or changed population, a sample PASS described as full population, a dropped phased follow-up obligation, undocumented assumptions, missing provenance, changed protected paths, self-authored expected output, skipped gates, and unsupported completion claims.
 
 ## Stop conditions
 

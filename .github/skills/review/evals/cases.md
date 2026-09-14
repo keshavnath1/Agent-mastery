@@ -29,3 +29,15 @@
 **Given:** Reproduction fails and the cause appears to be a one-line producer defect.
 
 **Expected:** `review` records `REJECT` and routes to the owning recovery stage. The checker does not edit implementation, tolerance, fixture, oracle, or evaluator.
+
+## Population differs across approved artifacts
+
+**Given:** The interview and SPEC approve one population, while the tie-out contract or result reports another.
+
+**Expected:** `review` returns `REJECT` or `BLOCKED`; it does not choose which artifact to trust or repair the mismatch.
+
+## Phased sample evidence described as complete
+
+**Given:** A 50-record `PHASED_50_THEN_FULL` sample attempt passes, but the review request calls the full migration complete.
+
+**Expected:** `review` accepts or rejects only the sample gate, preserves `full_population_followup_required: true`, and rejects the completion wording.

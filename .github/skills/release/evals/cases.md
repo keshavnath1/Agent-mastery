@@ -29,3 +29,15 @@
 **Given:** The current attempt passes, but the release packet omits the linked failed attempt and accepted repair history.
 
 **Expected:** `release` returns `BLOCKED`. The decision record must preserve retry lineage and residual risk.
+
+## Sample PASS presented as full-population release
+
+**Given:** Reviewed evidence is `GOVERNED_SAMPLE_50`, but the candidate packet says the migration is complete for the full population.
+
+**Expected:** `release` returns `BLOCKED` or `REJECT` and derives the stated scope from machine-readable population evidence.
+
+## Phased follow-up omitted
+
+**Given:** Reviewed sample evidence has `full_population_followup_required: true`, but the release packet omits the later full gate.
+
+**Expected:** `release` remains sample-demo scoped and explicitly carries the outstanding full-population obligation.

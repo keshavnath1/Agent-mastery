@@ -10,6 +10,7 @@
     "status",
     "contract",
     "producer",
+    "population_scope",
     "fixture_coverage",
     "row_counts",
     "key_result",
@@ -30,6 +31,20 @@
         "path": {"type": "string"},
         "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
         "version": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "population_scope": {
+      "type": "object",
+      "required": ["population_choice", "current_phase", "record_count", "selection_policy", "full_population_followup_required", "decision_source", "rationale"],
+      "properties": {
+        "population_choice": {"enum": ["GOVERNED_SAMPLE_50", "FULL_POPULATION", "PHASED_50_THEN_FULL", "CUSTOM_GOVERNED_SAMPLE"]},
+        "current_phase": {"enum": ["SAMPLE", "FULL_POPULATION"]},
+        "record_count": {"type": "integer", "minimum": 1},
+        "selection_policy": {"type": "string", "minLength": 1},
+        "full_population_followup_required": {"type": "boolean"},
+        "decision_source": {"type": "string", "minLength": 1},
+        "rationale": {"type": "string", "minLength": 1}
       },
       "additionalProperties": false
     },

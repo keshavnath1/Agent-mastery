@@ -65,3 +65,27 @@
 **Given:** A second validation attempt would write over the first failed result or remove its hash from run-state history.
 
 **Expected:** `validate` returns `BLOCKED`. Every attempt must remain addressable, and the retry must link the previous failure before independent review.
+
+## Contract population differs from interview approval
+
+**Given:** The approved interview chose `FULL_POPULATION`, but `config/tieout.yaml` declares a governed sample.
+
+**Expected:** `validate` returns `BLOCKED` before producer execution and identifies the population-contract mismatch.
+
+## Fifty-record contract has the wrong count
+
+**Given:** `population_choice` is `GOVERNED_SAMPLE_50`, but the fixture, oracle, or contract count is not exactly 50.
+
+**Expected:** Schema or validation returns `BLOCKED`; no comparison or PASS claim is permitted.
+
+## Phased sample PASS
+
+**Given:** `PHASED_50_THEN_FULL` is in `SAMPLE`, 50 records pass, and `full_population_followup_required` is true.
+
+**Expected:** The result records sample PASS and retains the full-population obligation. The run cannot report full-population or complete-migration PASS.
+
+## Full-population feasibility missing
+
+**Given:** `FULL_POPULATION` is selected, but complete keyed source/oracle reconciliation or bounded runtime evidence is absent.
+
+**Expected:** `validate` returns `BLOCKED`; it must not sample automatically.

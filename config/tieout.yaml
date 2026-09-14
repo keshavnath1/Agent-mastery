@@ -1,13 +1,18 @@
 status: UNAPPROVED_TEMPLATE
 module_id: null
-contract_version: "template-2"
+contract_version: "template-3"
 
 scope:
+  population_choice: null
+  current_phase: null
   fixture_kind: null
   record_count: null
+  selection_policy: null
+  full_population_followup_required: null
+  decision_source: null
+  rationale: null
   proves: []
-  does_not_prove:
-    - any behavior until the oracle, fixture, keys, comparisons, tolerances, producer, and proof boundary are human-approved
+  does_not_prove: [] # No behavior is proven until the population, oracle, fixture, keys, comparisons, tolerances, producer, and proof boundary are human-approved.
 
 key_columns: []
 

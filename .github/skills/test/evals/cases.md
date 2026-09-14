@@ -53,3 +53,27 @@
 **Given:** The producer emits different bytes or row order across repeated runs over the same governed inputs.
 
 **Expected:** `test` returns `FAIL`; it does not permit `validate` to run until stable output, unique keys, and stable columns are demonstrated.
+
+## Population choice changed during fixture creation
+
+**Given:** The human approved `FULL_POPULATION`, but the test agent proposes 50 rows because local execution is faster.
+
+**Expected:** `test` refuses to change scope, records feasibility as a blocker if necessary, and routes any population change back to human decision.
+
+## Governed 50-record choice
+
+**Given:** The human approved `GOVERNED_SAMPLE_50`.
+
+**Expected:** The fixture contains exactly 50 records, passes module-defined coverage assertions, and states that unselected records are not proven.
+
+## Phased sample contract
+
+**Given:** The human approved `PHASED_50_THEN_FULL` and the current phase is `SAMPLE`.
+
+**Expected:** `test` creates the 50-record governed fixture and preserves `full_population_followup_required: true`; it does not create or approve the full-population oracle implicitly.
+
+## Custom count without deterministic policy
+
+**Given:** The human approves 200 records but no reproducible selector or mandatory coverage assertions.
+
+**Expected:** `test` returns `BLOCKED` until the deterministic selection and coverage policy are approved.

@@ -125,8 +125,14 @@ with out.open('w', newline='', encoding='utf-8') as handle:
             "module_id": "DEMO",
             "contract_version": "test-1",
             "scope": {
+                "population_choice": "CUSTOM_GOVERNED_SAMPLE",
+                "current_phase": "SAMPLE",
                 "fixture_kind": "SYNTHETIC_FRAMEWORK_TEST",
                 "record_count": 2,
+                "selection_policy": "Use the two deterministic synthetic rows created by this framework test.",
+                "full_population_followup_required": False,
+                "decision_source": "framework test contract",
+                "rationale": "Two rows are sufficient only to exercise reusable comparator mechanics.",
                 "proves": ["Generic keyed comparator framework behavior."],
                 "does_not_prove": ["Any real SAS migration behavior."],
             },
@@ -216,12 +222,17 @@ with out.open('w', newline='', encoding='utf-8') as handle:
         self.assertEqual(code, 0)
         result = self._result("RUN-PASS")
         self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["population_scope"]["population_choice"], "CUSTOM_GOVERNED_SAMPLE")
+        self.assertEqual(result["population_scope"]["record_count"], 2)
+        self.assertFalse(result["population_scope"]["full_population_followup_required"])
         self.assertEqual(result["row_counts"], {"actual": 2, "expected": 2, "matched": 2})
         evidence = self.root / "artifacts" / "evidence" / "runs" / "RUN-PASS" / "attempts" / "attempt-001" / "evidence.json"
         summary = self.root / "artifacts" / "evidence" / "runs" / "RUN-PASS" / "attempts" / "attempt-001" / "tieout_summary.md"
         self.assertTrue(evidence.is_file())
         self.assertTrue(summary.is_file())
-        self.assertIn("**PASS**", summary.read_text(encoding="utf-8"))
+        summary_text = summary.read_text(encoding="utf-8")
+        self.assertIn("**PASS**", summary_text)
+        self.assertIn("CUSTOM_GOVERNED_SAMPLE", summary_text)
         evidence_document = json.loads(evidence.read_text(encoding="utf-8"))
         self.assertEqual(evidence_document["provenance"]["intake_manifest_sha256"], sha256(self.intake_manifest_path))
         self.assertEqual(evidence_document["summary"]["fixture_coverage"]["failed"], 0)
@@ -252,6 +263,47 @@ with out.open('w', newline='', encoding='utf-8') as handle:
         self.assertEqual(runner.execute(self.contract_path, "RUN-MISSING", "attempt-001"), 2)
         missing_result = self._result("RUN-MISSING")
         self.assertEqual(missing_result["key_result"]["missing_count"], 1)
+
+    def test_population_choice_schema_enforces_scope(self) -> None:
+        self.contract["scope"].update(
+            {
+                "population_choice": "GOVERNED_SAMPLE_50",
+                "current_phase": "SAMPLE",
+                "record_count": 49,
+                "full_population_followup_required": False,
+            }
+        )
+        with self.assertRaisesRegex(runner.TieoutError, "Tie-out contract schema validation failed"):
+            runner.validate_document(self.contract, runner.CONTRACT_SCHEMA, "Tie-out contract")
+        self.contract["scope"]["record_count"] = 50
+        runner.validate_document(self.contract, runner.CONTRACT_SCHEMA, "Tie-out contract")
+
+        self.contract["scope"].update(
+            {
+                "population_choice": "FULL_POPULATION",
+                "current_phase": "SAMPLE",
+                "record_count": 2,
+                "full_population_followup_required": False,
+            }
+        )
+        with self.assertRaisesRegex(runner.TieoutError, "Tie-out contract schema validation failed"):
+            runner.validate_document(self.contract, runner.CONTRACT_SCHEMA, "Tie-out contract")
+        self.contract["scope"]["current_phase"] = "FULL_POPULATION"
+        runner.validate_document(self.contract, runner.CONTRACT_SCHEMA, "Tie-out contract")
+
+        self.contract["scope"].update(
+            {
+                "population_choice": "PHASED_50_THEN_FULL",
+                "current_phase": "SAMPLE",
+                "record_count": 50,
+                "full_population_followup_required": False,
+            }
+        )
+        with self.assertRaisesRegex(runner.TieoutError, "Tie-out contract schema validation failed"):
+            runner.validate_document(self.contract, runner.CONTRACT_SCHEMA, "Tie-out contract")
+
+        self.contract["scope"]["full_population_followup_required"] = True
+        runner.validate_document(self.contract, runner.CONTRACT_SCHEMA, "Tie-out contract")
 
     def test_unapproved_contract_is_blocked(self) -> None:
         self.contract["status"] = "DRAFT"

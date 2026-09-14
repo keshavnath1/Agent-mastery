@@ -35,9 +35,9 @@ Document retained state, grouping, ordering, macro expansion, joins, procedures,
 
 ## Acceptance contract
 
-| Check | Keys | Intake and oracle provenance | Fixture and mandatory coverage | Comparison and decision rationale | Producer | Proof boundary |
-|---|---|---|---|---|---|---|
-| `<check>` | `<keys>` | `<paths, formats, hashes>` | `<selector, count, assertions>` | `<mode, tolerance, approver rationale>` | `<argv entry point and output>` | `<what PASS proves and does not prove>` |
+| Check | Population choice and phase | Keys | Intake and oracle provenance | Fixture and mandatory coverage | Comparison and decision rationale | Producer | Proof boundary |
+|---|---|---|---|---|---|---|---|
+| `<check>` | `<one of four options, current phase, record count, follow-up obligation>` | `<keys>` | `<paths, formats, hashes>` | `<selector, count, assertions>` | `<mode, tolerance, approver rationale>` | `<argv entry point and output>` | `<what PASS proves and does not prove>` |
 
 ## Exclusions
 
@@ -45,7 +45,7 @@ State what this specification does not authorize or prove, including unselected 
 
 ## Verification plan
 
-Map each behavior ID to a deterministic unit, contract, parity, or runtime check. For local parity, identify the authoritative intake manifest, oracle representation, fixture selector, source observations, approved transformations, mandatory coverage assertions, selected-key digest, actual-output producer, generic runner artifacts, and independent review command. A required check must not be weakened by implementation or repair work.
+Map each behavior ID to a deterministic unit, contract, parity, or runtime check. For local parity, identify the human-selected population option, current phase, record count, deterministic selection policy, full-population follow-up obligation, authoritative intake manifest, oracle representation, fixture selector, source observations, approved transformations, mandatory coverage assertions, selected-key digest, actual-output producer, generic runner artifacts, and independent review command. For `PHASED_50_THEN_FULL`, define separate sample and full-population gates; neither evidence set substitutes for the other. A required check must not be weakened by implementation or repair work.
 
 ## Unresolved decisions
 

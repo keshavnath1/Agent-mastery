@@ -95,11 +95,12 @@ Reference canonical artifacts by path and hash; never maintain competing editabl
 5. The checker cannot repair while reviewing.
 6. Stop after three repair attempts or two repeats of the same failure without new evidence.
 7. File existence is not proof of success; execute the relevant deterministic validator.
-8. A local parity claim requires an approved `config/tieout.yaml`; locked intake, selector/source/input, fixture, and oracle hashes; passed mandatory coverage assertions; a matching selected-key digest; and schema-valid PASS artifacts from `scripts/run_tieout.py`.
-9. Preserve every failed and retried evidence artifact with hashes and lineage; never overwrite a failure or relabel it as PASS.
-10. Independent review must rerun the frozen command, and release metrics must be derived from reviewed evidence rather than copied by hand.
-11. Do not claim semantic parity, selected-runtime proof, oracle lock, ROI, release, or completion without corresponding approved evidence.
-12. State proof boundaries explicitly; local evidence does not automatically prove full-population or distributed behavior.
+8. When local tie-out is requested, `interview` must present `GOVERNED_SAMPLE_50`, `FULL_POPULATION`, `PHASED_50_THEN_FULL`, and `CUSTOM_GOVERNED_SAMPLE`; the human selects one. Never default from file size, prior examples, or convenience.
+9. A local parity claim requires an approved `config/tieout.yaml`; the selected population and phase; locked intake, selector/source/input, fixture, and oracle hashes; passed mandatory coverage assertions; a matching selected-key digest; and schema-valid PASS artifacts from `scripts/run_tieout.py`. A phased sample PASS does not satisfy its full-population follow-up gate.
+10. Preserve every failed and retried evidence artifact with hashes and lineage; never overwrite a failure or relabel it as PASS.
+11. Independent review must rerun the frozen command, and release metrics must be derived from reviewed evidence rather than copied by hand.
+12. Do not claim semantic parity, selected-runtime proof, oracle lock, ROI, release, or completion without corresponding approved evidence.
+13. State proof boundaries explicitly; sample evidence does not prove unselected records, and local evidence does not automatically prove full-population or distributed behavior.
 
 ## Git rules
 

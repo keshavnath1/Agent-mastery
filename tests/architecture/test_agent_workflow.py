@@ -41,7 +41,13 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertIsNone(project["active_stage"])
         self.assertEqual(profile["status"], "UNAPPROVED_TEMPLATE")
         self.assertIsNone(profile["module_id"])
+        self.assertIsNone(profile["local_tieout_requested"])
+        self.assertIsNone(profile["tieout_population"]["choice"])
+        self.assertIn("tieout_population_choice", profile["human_approval_required"])
         self.assertEqual(tieout["status"], "UNAPPROVED_TEMPLATE")
+        self.assertIsNone(tieout["scope"]["population_choice"])
+        self.assertIsNone(tieout["scope"]["current_phase"])
+        self.assertIsNone(tieout["scope"]["full_population_followup_required"])
         self.assertEqual(tieout["key_columns"], [])
         self.assertIsNone(tieout["intake_manifest"]["path"])
         self.assertIsNone(tieout["oracle"]["path"])
@@ -98,6 +104,29 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertEqual(artifacts["tieout_result"], "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_result.json")
         self.assertEqual(artifacts["tieout_summary"], "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md")
 
+    def test_interview_requires_human_population_choice(self) -> None:
+        choices = {
+            "GOVERNED_SAMPLE_50",
+            "FULL_POPULATION",
+            "PHASED_50_THEN_FULL",
+            "CUSTOM_GOVERNED_SAMPLE",
+        }
+        interview = (ROOT / ".github/skills/interview/SKILL.md").read_text(encoding="utf-8")
+        start_prompt = (ROOT / ".github/prompts/start-migration.prompt.md").read_text(encoding="utf-8")
+        interview_evals = (ROOT / ".github/skills/interview/evals/cases.md").read_text(encoding="utf-8")
+        specify = (ROOT / ".github/skills/specify/SKILL.md").read_text(encoding="utf-8")
+        validate = (ROOT / ".github/skills/validate/SKILL.md").read_text(encoding="utf-8")
+        release = (ROOT / ".github/skills/release/SKILL.md").read_text(encoding="utf-8")
+        for choice in choices:
+            self.assertIn(choice, interview)
+            self.assertIn(choice, start_prompt)
+        self.assertIn("Tie-out requested without population choice", interview_evals)
+        self.assertIn("full_population_followup_required", specify)
+        self.assertIn("PHASED_50_THEN_FULL", validate)
+        self.assertIn("full_population_followup_required", release)
+        gate = next(gate for gate in self.workflow["human_gates"] if gate.get("after") == "interview")
+        self.assertIn("tie-out population", gate["approval"])
+
     def test_generic_parity_framework_is_required_but_inert(self) -> None:
         for relative in [
             "scripts/run_tieout.py",
@@ -121,8 +150,10 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertIn("scripts/project.py tieout", validate)
         self.assertIn("--attempt-id", validate)
         self.assertIn("tieout_summary.md", validate)
+        self.assertIn("population_scope", runner)
         self.assertIn("reproduced `tieout_result.json`", review)
-        self.assertIn("Derive the parity scoreboard", release)
+        self.assertIn("parity scoreboard", release)
+        self.assertIn("reviewed machine-readable evidence", release)
         self.assertIn("shell=False", runner)
         self.assertIn("selected_keys_digest", runner)
         self.assertIn("render_summary", runner)

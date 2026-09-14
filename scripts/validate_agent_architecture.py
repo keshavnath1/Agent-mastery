@@ -66,6 +66,10 @@ def main() -> int:
     require(migration_profile.get("module_id") is None, "Migration profile must not contain a module ID", errors)
     require(migration_profile.get("migration_mode") is None, "Migration mode must be chosen through interview", errors)
     require(migration_profile.get("selected_adapter") is None, "Template must not select a runtime adapter", errors)
+    require(migration_profile.get("local_tieout_requested") is None, "Template must not assume local tie-out", errors)
+    population = migration_profile.get("tieout_population", {})
+    require(population.get("choice") is None and population.get("record_count") is None, "Template must not select a tie-out population", errors)
+    require("tieout_population_choice" in migration_profile.get("human_approval_required", []), "Migration profile lacks the population-choice human gate", errors)
 
     tieout = yaml.safe_load(text("config/tieout.yaml"))
     tieout_schema = json.loads(text("contracts/tieout_contract.schema.json"))
@@ -73,6 +77,9 @@ def main() -> int:
     require(not tieout_schema_errors, f"Tie-out template fails its schema: {[error.message for error in tieout_schema_errors[:5]]}", errors)
     require(tieout.get("status") == "UNAPPROVED_TEMPLATE", "Tie-out contract must be unapproved", errors)
     require(tieout.get("module_id") is None, "Tie-out contract must not contain a module ID", errors)
+    require(tieout.get("scope", {}).get("population_choice") is None, "Tie-out template must not select a population", errors)
+    require(tieout.get("scope", {}).get("current_phase") is None, "Tie-out template must not select a phase", errors)
+    require(tieout.get("scope", {}).get("full_population_followup_required") is None, "Tie-out template must not infer a full-population obligation", errors)
     require(tieout.get("key_columns") == [], "Template must not invent tie-out keys", errors)
     require(tieout.get("intake_manifest", {}).get("path") is None, "Template must not select an intake manifest", errors)
     require(tieout.get("oracle", {}).get("path") is None, "Template must not select a SAS oracle", errors)
@@ -108,6 +115,8 @@ def main() -> int:
     ]
     require([act["skills"] for act in workflow["acts"]] == expected_order, "Workflow act order differs from the lifecycle contract", errors)
     require(workflow["recovery_loop"]["sequence"] == ["ingest", "diagnose", "repair", "review"], "Recovery sequence is incorrect", errors)
+    interview_gate = next((gate for gate in workflow["human_gates"] if gate.get("after") == "interview"), {})
+    require("tie-out population" in interview_gate.get("approval", ""), "Interview gate lacks tie-out population approval", errors)
 
     trace_skill = text(".github/skills/trace/SKILL.md")
     map_skill = text(".github/skills/map/SKILL.md")
@@ -116,6 +125,9 @@ def main() -> int:
     orchestrate_skill = text(".github/skills/orchestrate/SKILL.md")
     orchestrate_pressure = text(".github/skills/orchestrate/evals/cases.md")
     stage_contract = text("docs/runbooks/STAGE_CONTRACT.md")
+    interview_skill = text(".github/skills/interview/SKILL.md")
+    interview_pressure = text(".github/skills/interview/evals/cases.md")
+    start_prompt = text(".github/prompts/start-migration.prompt.md")
     specify_skill = text(".github/skills/specify/SKILL.md")
     generate_skill = text(".github/skills/generate/SKILL.md")
     test_skill = text(".github/skills/test/SKILL.md")
@@ -135,12 +147,15 @@ def main() -> int:
     require("**Copy/paste next:**" in stage_contract, "Stage contract lacks copy-ready next message", errors)
     require("Missing output hash" in orchestrate_pressure, "Orchestrate evaluations lack missing-hash coverage", errors)
     require("Recovery handoff" in orchestrate_pressure, "Orchestrate evaluations lack recovery coverage", errors)
-    require("config/tieout.yaml" in specify_skill and "tieout_contract.schema.json" in specify_skill, "Specify does not materialize an executable draft tie-out contract", errors)
+    for choice in ["GOVERNED_SAMPLE_50", "FULL_POPULATION", "PHASED_50_THEN_FULL", "CUSTOM_GOVERNED_SAMPLE"]:
+        require(choice in interview_skill and choice in start_prompt, f"Interview/start prompt lacks population choice {choice}", errors)
+    require("Tie-out requested without population choice" in interview_pressure and "Phased sample contract" in text(".github/skills/test/evals/cases.md"), "Population-choice pressure coverage is incomplete", errors)
+    require("config/tieout.yaml" in specify_skill and "tieout_contract.schema.json" in specify_skill and "full_population_followup_required" in specify_skill, "Specify does not materialize the population-aware draft tie-out contract", errors)
     require("producer entry point" in generate_skill and "never reads the SAS oracle" in generate_skill, "Generate does not provide an oracle-isolated parity producer", errors)
     require("fixture_manifest.schema.json" in test_skill and "coverage assertions" in test_skill and "selected-key digest" in test_skill, "Test lacks governed fixture coverage and selection controls", errors)
-    require("scripts/project.py tieout" in validate_skill and "--attempt-id" in validate_skill and "tieout_summary.md" in validate_skill and "retry" in validate_skill, "Validate lacks full generic parity evidence and retry history", errors)
+    require("scripts/project.py tieout" in validate_skill and "--attempt-id" in validate_skill and "tieout_summary.md" in validate_skill and "PHASED_50_THEN_FULL" in validate_skill and "retry" in validate_skill, "Validate lacks population-aware parity evidence and retry history", errors)
     require("reproduced `tieout_result.json`" in review_skill and "limitations" in review_skill, "Review does not independently reproduce parity evidence", errors)
-    require("Derive the parity scoreboard" in release_skill and "does_not_prove" in release_skill, "Release does not derive its claim from reviewed evidence", errors)
+    require("parity scoreboard" in release_skill and "reviewed machine-readable evidence" in release_skill and "does_not_prove" in release_skill, "Release does not derive its claim from reviewed evidence", errors)
     require("shell=False" in tieout_runner and "selected_keys_digest" in tieout_runner and "render_summary" in tieout_runner and "attempt_id" in tieout_runner and "include_values_in_evidence" in text("config/tieout.yaml"), "Generic tie-out runner lacks safe execution, selection, append-only summary, or privacy controls", errors)
     require("config/tieout.yaml" in restart_skill, "Restart does not account for approved tie-out contracts", errors)
     require("runtime-neutral semantic responsibilities" in map_skill, "Map skill lacks taxonomy-neutral fallback", errors)
@@ -196,6 +211,7 @@ def main() -> int:
     require("Hand-entered parity scoreboard" in release_pressure and "Candidate packet treated as approval" in release_pressure, "Release evaluations lack evidence-derived scoreboard and human-gate cases", errors)
 
     for relative in [
+        ".github/skills/interview/evals/cases.md",
         ".github/skills/restart/evals/cases.md",
         ".github/skills/specify/evals/cases.md",
         ".github/skills/test/evals/cases.md",

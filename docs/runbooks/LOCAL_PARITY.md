@@ -6,8 +6,8 @@ Local parity is not automatically available merely because SAS files were copied
 
 | Stage | Required outcome |
 |---|---|
-| `interview` | Identify the business decision, SAS reference outputs, available inputs, and intended proof scope. |
-| `specify` | Define keys, intake/oracle provenance, oracle representation, fixture/coverage policy, comparison modes, tolerance rationale, producer command, and claim limitations in the module SPEC and draft `config/tieout.yaml`. |
+| `interview` | Identify the business decision, SAS references and inputs; present the four population choices; record the human-selected choice, phase, count, follow-up obligation, rationale, and approver. |
+| `specify` | Preserve the selected population and define keys, intake/oracle provenance, oracle representation, fixture/coverage policy, comparison modes, tolerance rationale, producer command, and claim limitations in the module SPEC and draft `config/tieout.yaml`. |
 | `trace → map → model` | Reconstruct cited behavior and one semantic owner for every business formula. |
 | `generate` | Create the pure Python implementation and deterministic producer command declared by the draft tie-out contract. |
 | `test` | Create unit/contract tests, deterministic selector, governed fixture inputs, immutable SAS oracle, coverage assertions, source observations, transformation disclosures, and schema-valid fixture manifest; populate exact hashes and request contract approval. |
@@ -15,11 +15,24 @@ Local parity is not automatically available merely because SAS files were copied
 | `validate` | Execute the generic runner and emit schema-valid `tieout_result.json`, generated `tieout_summary.md`, and `evidence.json`. |
 | `review → release` | Independently rerun the frozen command, reconcile the scoreboard, preserve limitations, and request the human release decision. |
 
+## Population choice
+
+When tie-out is requested, `interview` must present these choices and stop for human selection:
+
+| Choice | Contract behavior |
+|---|---|
+| `GOVERNED_SAMPLE_50` | `current_phase: SAMPLE`, exactly 50 governed records, no implicit full-population claim. |
+| `FULL_POPULATION` | `current_phase: FULL_POPULATION`; every eligible keyed record and complete oracle must be available. |
+| `PHASED_50_THEN_FULL` | First contract uses 50 governed records with `full_population_followup_required: true`; a separate later contract and approval govern the full phase. |
+| `CUSTOM_GOVERNED_SAMPLE` | The human supplies a count; the contract freezes deterministic selection and mandatory coverage. |
+
+The agent may recommend `PHASED_50_THEN_FULL` when the user requests fast feedback and eventual full evidence, but it cannot select or silently downgrade the population.
+
 ## Generic tie-out contract
 
 `config/tieout.yaml` is inert while its status is `UNAPPROVED_TEMPLATE` or `DRAFT`. Before execution it must identify:
 
-- an explicit module and record count;
+- an explicit module, population choice, current phase, record count, deterministic selection policy, follow-up obligation, decision source, and rationale;
 - one or more key columns;
 - the authoritative intake manifest and SHA-256;
 - a repository-relative SAS oracle with SHA-256, format, and representation/precision statement;
@@ -61,7 +74,7 @@ Exit code `0` means `PASS`, `2` means `FAIL`, and `3` means `BLOCKED`.
 
 ## Proof boundary
 
-A PASS proves only the scope written in the approved contract. A sampled local parity result does not automatically prove full-population behavior, a selected distributed runtime, cluster execution, performance, scalability, production readiness, or financial outcomes.
+A PASS proves only the population and current phase written in the approved contract. A `PHASED_50_THEN_FULL` sample PASS keeps the later full-population gate open. A sampled local parity result does not automatically prove full-population behavior, a selected distributed runtime, cluster execution, performance, scalability, production readiness, or financial outcomes.
 
 ## Failure routing
 

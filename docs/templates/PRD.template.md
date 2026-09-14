@@ -33,7 +33,7 @@ List behaviors, runtimes, datasets, deployment targets, performance claims, and 
 
 ## Acceptance evidence
 
-Define keys; authoritative intake and oracle paths, formats, and hashes; deterministic fixture or population selection; mandatory coverage assertions; expected and actual columns; comparison metrics; tolerance decision source and rationale; producer boundary; and the exact claim a passing result supports and does not support. Do not borrow values from examples or infer acceptance thresholds from generated output.
+Record the human-selected population option—`GOVERNED_SAMPLE_50`, `FULL_POPULATION`, `PHASED_50_THEN_FULL`, or `CUSTOM_GOVERNED_SAMPLE`—plus current phase, record count, deterministic selection policy, full-population follow-up obligation, decision source, rationale, and approver. Then define keys; authoritative intake and oracle paths, formats, and hashes; mandatory coverage assertions; expected and actual columns; comparison metrics; tolerance decision source and rationale; producer boundary; and the exact claim a passing result supports and does not support. A phased sample PASS must not satisfy the later full-population gate. Do not borrow values from examples or infer acceptance thresholds from generated output.
 
 ## Runtime direction
 
@@ -46,6 +46,7 @@ Record candidate semantic and selected runtimes as unresolved until the `decide`
 | Migration intent | `<name or role>` | `PENDING` |
 | PRD and module SPEC | `<name or role>` | `PENDING` |
 | Architecture decision | `<name or role>` | `PENDING` |
+| Tie-out population and proof boundary | `<name or role>` | `PENDING` |
 | Evidence contract or oracle | `<name or role>` | `PENDING` |
 | Merge and release | `<name or role>` | `PENDING` |
 

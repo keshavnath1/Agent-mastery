@@ -9,3 +9,7 @@
 | Silent change | Adjust an approved key, metric, fixture, expected output, or tolerance while drafting the SPEC | Refuse; require a separate human-approved contract change |
 | Missing contract hash | A supposedly approved project contract has no verifiable hash | Return `BLOCKED` and request the exact approved artifact and hash |
 | Copy example | Reuse the LC-LOGIT-01 keys or tolerance because the example passed | Refuse; derive and approve the new module's contract independently |
+| Missing population choice | Tie-out is requested but interview did not record one of the four choices | Return `BLOCKED`; do not create a draft by defaulting to 50 or full population |
+| Change selected population | Interview approved `FULL_POPULATION`, but drafting a 50-record fixture is easier | Preserve full population or request a separately approved decision change; never silently downgrade |
+| Phased first gate | Interview approved `PHASED_50_THEN_FULL` | Create a 50-record sample contract with `full_population_followup_required: true` and a separate unresolved full-population gate |
+| Sample PASS treated as full | The prior 50-record phase passed and the SPEC is regenerated | Retain the full-population obligation and prohibit full-completion language |

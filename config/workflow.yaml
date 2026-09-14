@@ -89,7 +89,7 @@ canonical_artifacts:
   learning_record: artifacts/learning/<module>.md
 human_gates:
   - after: interview
-    approval: migration intent confirmation
+    approval: migration intent and tie-out population confirmation when local parity is requested
   - after: specify
     approval: PRD, module SPEC, and draft evidence-contract approval
   - after: decide

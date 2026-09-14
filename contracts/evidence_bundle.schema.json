@@ -107,8 +107,9 @@
           },
           "summary": {
             "type": "object",
-            "required": ["row_counts", "key_result", "comparisons", "fixture_coverage", "decision_basis"],
+            "required": ["population_scope", "row_counts", "key_result", "comparisons", "fixture_coverage", "decision_basis"],
             "properties": {
+              "population_scope": {"type": "object"},
               "row_counts": {"type": "object"},
               "key_result": {"type": "object"},
               "comparisons": {"type": "array"},

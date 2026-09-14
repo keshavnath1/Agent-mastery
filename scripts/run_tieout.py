@@ -197,6 +197,19 @@ def write_json(path: Path, document: Mapping[str, Any]) -> None:
     path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def result_population_scope(contract: Mapping[str, Any]) -> dict[str, Any]:
+    scope = contract["scope"]
+    return {
+        "population_choice": scope["population_choice"],
+        "current_phase": scope["current_phase"],
+        "record_count": scope["record_count"],
+        "selection_policy": scope["selection_policy"],
+        "full_population_followup_required": scope["full_population_followup_required"],
+        "decision_source": scope["decision_source"],
+        "rationale": scope["rationale"],
+    }
+
+
 def blocked_result(
     contract: Mapping[str, Any],
     contract_path: Path,
@@ -213,6 +226,7 @@ def blocked_result(
         "attempt_id": attempt_id,
         "gate": "local_parity_tieout",
         "status": "BLOCKED",
+        "population_scope": result_population_scope(contract),
         "contract": {
             "path": contract_path.relative_to(ROOT).as_posix(),
             "sha256": contract_hash,
@@ -247,7 +261,17 @@ def render_summary(result: Mapping[str, Any], contract: Mapping[str, Any]) -> st
     lines = [
         f"# {result['module_id']} Local Parity Result",
         "",
-        f"> **{result['status']}** — governed SAS-to-Python keyed tie-out for run `{result['run_id']}`.",
+        f"> **{result['status']}** — governed SAS-to-Python keyed tie-out for run `{result['run_id']}`, attempt `{result['attempt_id']}`.",
+        "",
+        "## Approved population",
+        "",
+        f"- **Choice:** `{result['population_scope']['population_choice']}`",
+        f"- **Current phase:** `{result['population_scope']['current_phase']}`",
+        f"- **Record count:** `{result['population_scope']['record_count']}`",
+        f"- **Selection policy:** {result['population_scope']['selection_policy']}",
+        f"- **Full-population follow-up required:** `{result['population_scope']['full_population_followup_required']}`",
+        f"- **Decision source:** {result['population_scope']['decision_source']}",
+        f"- **Rationale:** {result['population_scope']['rationale']}",
         "",
         "## Scoreboard",
         "",
@@ -336,6 +360,7 @@ def build_evidence(
             "producer_return_code": result["producer"]["return_code"],
         },
         "summary": {
+            "population_scope": result["population_scope"],
             "row_counts": result["row_counts"],
             "key_result": result["key_result"],
             "fixture_coverage": result["fixture_coverage"],
@@ -568,6 +593,7 @@ def execute(contract_path: Path, run_id: str, attempt_id: str) -> int:
         "attempt_id": attempt_id,
         "gate": "local_parity_tieout",
         "status": "FAIL" if failed else "PASS",
+        "population_scope": result_population_scope(contract),
         "contract": {
             "path": contract_path.relative_to(ROOT).as_posix(),
             "sha256": contract_hash,
