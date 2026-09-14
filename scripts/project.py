@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / "artifacts" / "run_state"
 
 
-def run(script: str) -> int:
-    return subprocess.run([sys.executable, str(ROOT / "scripts" / script)], cwd=ROOT).returncode
+def run(script: str, *args: str) -> int:
+    return subprocess.run([sys.executable, str(ROOT / "scripts" / script), *args], cwd=ROOT).returncode
 
 
 def state_files() -> list[Path]:
@@ -75,6 +75,9 @@ def main() -> int:
     sub.add_parser("status")
     start_parser = sub.add_parser("start")
     start_parser.add_argument("--module", required=True, help="Explicit neutral module identifier")
+    tieout_parser = sub.add_parser("tieout")
+    tieout_parser.add_argument("--run-id", required=True, help="Existing durable run identifier")
+    tieout_parser.add_argument("--contract", default="config/tieout.yaml", help="Repository-relative approved contract")
     args = parser.parse_args()
 
     if args.command == "validate":
@@ -87,6 +90,8 @@ def main() -> int:
         return status()
     if args.command == "start":
         return start(args.module)
+    if args.command == "tieout":
+        return run("run_tieout.py", "--contract", args.contract, "--run-id", args.run_id)
     return 2
 
 

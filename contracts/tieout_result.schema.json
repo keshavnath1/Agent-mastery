@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Generic SAS Migration Tie-Out Result",
+  "type": "object",
+  "required": [
+    "module_id",
+    "run_id",
+    "gate",
+    "status",
+    "contract",
+    "producer",
+    "row_counts",
+    "key_result",
+    "comparisons",
+    "mismatches",
+    "limitations"
+  ],
+  "properties": {
+    "module_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "gate": {"const": "local_parity_tieout"},
+    "status": {"enum": ["PASS", "FAIL", "BLOCKED"]},
+    "contract": {
+      "type": "object",
+      "required": ["path", "sha256", "version"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "version": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "producer": {
+      "type": "object",
+      "required": ["command", "cwd", "return_code", "stdout", "stderr"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "cwd": {"type": "string"},
+        "return_code": {"type": "integer"},
+        "stdout": {"type": "string"},
+        "stderr": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "row_counts": {
+      "type": "object",
+      "required": ["expected", "actual", "matched"],
+      "properties": {
+        "expected": {"type": "integer", "minimum": 0},
+        "actual": {"type": "integer", "minimum": 0},
+        "matched": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "key_result": {
+      "type": "object",
+      "required": ["missing_count", "extra_count", "duplicate_expected_count", "duplicate_actual_count"],
+      "properties": {
+        "missing_count": {"type": "integer", "minimum": 0},
+        "extra_count": {"type": "integer", "minimum": 0},
+        "duplicate_expected_count": {"type": "integer", "minimum": 0},
+        "duplicate_actual_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "comparisons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "mode", "tolerance", "compared", "failures", "max_delta"],
+        "properties": {
+          "name": {"type": "string"},
+          "mode": {"enum": ["exact", "absolute", "relative"]},
+          "tolerance": {"type": ["number", "null"]},
+          "compared": {"type": "integer", "minimum": 0},
+          "failures": {"type": "integer", "minimum": 0},
+          "max_delta": {"type": ["number", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "mismatches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key_hash", "comparison", "reason", "expected", "actual", "delta"],
+        "properties": {
+          "key_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "comparison": {"type": "string"},
+          "reason": {"type": "string"},
+          "expected": {"type": ["string", "number", "null"]},
+          "actual": {"type": ["string", "number", "null"]},
+          "delta": {"type": ["number", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

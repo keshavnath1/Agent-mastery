@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Generic SAS Migration Tie-Out Contract",
+  "type": "object",
+  "required": [
+    "status",
+    "module_id",
+    "contract_version",
+    "scope",
+    "key_columns",
+    "oracle",
+    "fixture_manifest",
+    "producer",
+    "comparisons",
+    "output",
+    "privacy",
+    "oracle_lock"
+  ],
+  "properties": {
+    "status": {
+      "enum": ["UNAPPROVED_TEMPLATE", "DRAFT", "APPROVED"]
+    },
+    "module_id": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "contract_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "object",
+      "required": ["fixture_kind", "record_count", "proves", "does_not_prove"],
+      "properties": {
+        "fixture_kind": {"type": ["string", "null"]},
+        "record_count": {"type": ["integer", "null"], "minimum": 1},
+        "proves": {"type": "array", "items": {"type": "string"}},
+        "does_not_prove": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "key_columns": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "oracle": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": ["string", "null"]},
+        "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "fixture_manifest": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": ["string", "null"]},
+        "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "producer": {
+      "type": "object",
+      "required": ["command", "cwd", "actual_output_path", "timeout_seconds"],
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "cwd": {"type": "string", "minLength": 1},
+        "actual_output_path": {"type": ["string", "null"]},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 86400}
+      },
+      "additionalProperties": false
+    },
+    "comparisons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "expected_column", "actual_column", "mode", "null_equal"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "expected_column": {"type": "string", "minLength": 1},
+          "actual_column": {"type": "string", "minLength": 1},
+          "mode": {"enum": ["exact", "absolute", "relative"]},
+          "tolerance": {"type": ["number", "null"], "minimum": 0},
+          "scale_floor": {"type": "number", "exclusiveMinimum": 0, "default": 1e-15},
+          "null_equal": {"type": "boolean"}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"mode": {"const": "exact"}}},
+            "then": {"properties": {"tolerance": {"type": "null"}}},
+            "else": {"required": ["tolerance"], "properties": {"tolerance": {"type": "number"}}}
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["result_path", "evidence_path"],
+      "properties": {
+        "result_path": {"type": "string", "minLength": 1},
+        "evidence_path": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["hash_keys_in_evidence", "include_values_in_evidence", "max_mismatches"],
+      "properties": {
+        "hash_keys_in_evidence": {"const": true},
+        "include_values_in_evidence": {"const": false},
+        "max_mismatches": {"type": "integer", "minimum": 0, "maximum": 1000}
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "oracle_lock": {
+      "type": "object",
+      "required": ["status", "human_approval_required", "approved_by", "approved_on", "approval_scope", "implementation_may_modify"],
+      "properties": {
+        "status": {"enum": ["UNAPPROVED", "APPROVED"]},
+        "human_approval_required": {"const": true},
+        "approved_by": {"type": ["string", "null"]},
+        "approved_on": {"type": ["string", "null"]},
+        "approval_scope": {"type": ["string", "null"]},
+        "implementation_may_modify": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "APPROVED"}}},
+      "then": {
+        "properties": {
+          "module_id": {"type": "string"},
+          "scope": {
+            "properties": {
+              "fixture_kind": {"type": "string"},
+              "record_count": {"type": "integer"},
+              "proves": {"minItems": 1},
+              "does_not_prove": {"minItems": 1}
+            }
+          },
+          "key_columns": {"minItems": 1},
+          "oracle": {
+            "properties": {
+              "path": {"type": "string"},
+              "sha256": {"type": "string"}
+            }
+          },
+          "fixture_manifest": {
+            "properties": {
+              "path": {"type": "string"},
+              "sha256": {"type": "string"}
+            }
+          },
+          "producer": {
+            "properties": {
+              "command": {"minItems": 1},
+              "actual_output_path": {"type": "string"}
+            }
+          },
+          "comparisons": {"minItems": 1},
+          "oracle_lock": {
+            "properties": {
+              "status": {"const": "APPROVED"},
+              "approved_by": {"type": "string"},
+              "approved_on": {"type": "string"},
+              "approval_scope": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

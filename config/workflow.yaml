@@ -82,6 +82,7 @@ canonical_artifacts:
   policy_registry: policy/policy_registry.yaml
   semantic_ir: artifacts/semantic_ir/<module>.json
   implementation: src/sas_migration/semantic/
+  tieout_result: artifacts/evidence/runs/<run-id>/tieout_result.json
   evidence: artifacts/evidence/runs/<run-id>/evidence.json
   release_packet: artifacts/releases/<run-id>/release_packet.md
   learning_record: artifacts/learning/<module>.md
@@ -89,13 +90,15 @@ human_gates:
   - after: interview
     approval: migration intent confirmation
   - after: specify
-    approval: PRD and module SPEC approval
+    approval: PRD, module SPEC, and draft evidence-contract approval
   - after: decide
     approval: ADR approval
   - after: harvest
     approval: candidate bundle review
   - before: import
     approval: exact import preview approval
+  - after: test
+    approval: governed fixture, oracle hash, and executable tie-out-contract approval
   - after: validate
     approval: behavior evidence acceptance
   - after: review

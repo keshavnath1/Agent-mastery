@@ -43,7 +43,9 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertIsNone(profile["module_id"])
         self.assertEqual(tieout["status"], "UNAPPROVED_TEMPLATE")
         self.assertEqual(tieout["key_columns"], [])
-        self.assertEqual(tieout["required_prediction_columns"], [])
+        self.assertIsNone(tieout["oracle"]["path"])
+        self.assertIsNone(tieout["fixture_manifest"]["path"])
+        self.assertEqual(tieout["producer"]["command"], [])
         self.assertEqual(tieout["comparisons"], [])
         self.assertFalse(tieout["oracle_lock"]["implementation_may_modify"])
 
@@ -90,6 +92,27 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertEqual(artifacts["module_spec"], "docs/specs/<module>.md")
         self.assertEqual(artifacts["semantic_ir"], "artifacts/semantic_ir/<module>.json")
         self.assertEqual(artifacts["implementation"], "src/sas_migration/semantic/")
+        self.assertEqual(artifacts["tieout_result"], "artifacts/evidence/runs/<run-id>/tieout_result.json")
+
+    def test_generic_parity_framework_is_required_but_inert(self) -> None:
+        for relative in [
+            "scripts/run_tieout.py",
+            "contracts/tieout_contract.schema.json",
+            "contracts/tieout_result.schema.json",
+            "contracts/fixture_manifest.schema.json",
+            "docs/runbooks/LOCAL_PARITY.md",
+            "tests/framework/test_generic_tieout.py",
+        ]:
+            self.assertTrue((ROOT / relative).is_file(), relative)
+
+        generate = (ROOT / ".github/skills/generate/SKILL.md").read_text(encoding="utf-8")
+        test = (ROOT / ".github/skills/test/SKILL.md").read_text(encoding="utf-8")
+        validate = (ROOT / ".github/skills/validate/SKILL.md").read_text(encoding="utf-8")
+        runner = (ROOT / "scripts/run_tieout.py").read_text(encoding="utf-8")
+        self.assertIn("producer entry point", generate)
+        self.assertIn("fixture_manifest.schema.json", test)
+        self.assertIn("scripts/project.py tieout", validate)
+        self.assertIn("shell=False", runner)
 
     def test_recovery_loop_is_bounded(self) -> None:
         recovery = self.workflow["recovery_loop"]

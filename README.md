@@ -12,8 +12,8 @@ This repository is a **clean-slate, specification-driven framework** for migrati
 | `.github/prompts/` | Short user-facing Copilot commands that route work |
 | `.github/skills/` | Twenty lifecycle and recovery skills with references, schemas, templates, and evaluations |
 | `config/workflow.yaml` | Machine-readable five-act lifecycle, gates, canonical artifacts, and recovery sequence |
-| `contracts/` | JSON schemas for durable run state, evidence, and semantic IR |
-| `scripts/` | Framework validation, intake inventory, and status helpers used by active skills |
+| `contracts/` | JSON schemas for durable run state, semantic IR, governed fixtures, tie-out contracts/results, and evidence |
+| `scripts/` | Framework validation, intake inventory, status, and the generic contract-driven tie-out runner used by active skills |
 | `docs/runbooks/` | Intake, Git, local execution, cluster evidence, and Stage Result contracts |
 | `examples/lc-logit-01/` | Documentation-only example showing how one score-only migration used the framework |
 
@@ -152,6 +152,28 @@ Review the artifact and SHA-256 before pasting the next approval. Do not use `/r
 
 The prompt is only the router. The selected skill owns the procedure, artifact, validation, state update, and stop behavior.
 
+## How parity and tie-out are created
+
+Copying SAS files and reference CSVs into `intake/` does not immediately run parity. The workflow must first approve an executable evidence contract:
+
+```text
+interview identifies the oracle and proof goal
+    ↓
+specify defines keys, fixture policy, columns, metrics, tolerances, producer, and proof boundary
+    ↓
+generate creates the Python semantic core and actual-output producer
+    ↓
+test creates the governed fixture manifest, locks the SAS oracle hash, and tests the generic comparator
+    ↓
+human approves the exact tie-out contract and hashes
+    ↓
+validate runs the generic keyed tie-out and emits PASS / FAIL / BLOCKED evidence
+```
+
+The active `validate` skill invokes `python3 scripts/project.py tieout --run-id <run-id>` internally. Users should continue using Copilot prompts rather than running this helper manually. The runner is module-neutral: it reads only the approved `config/tieout.yaml`, runs the declared producer without a shell, verifies oracle and fixture hashes, detects duplicate/missing/extra keys, applies every configured comparison, and writes schema-valid `tieout_result.json` plus `evidence.json`.
+
+See [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md). An unapproved or incomplete tie-out contract must return `BLOCKED`; unit tests alone cannot be presented as parity.
+
 ## Canonical artifacts
 
 | Owning skill | Canonical artifact |
@@ -159,7 +181,7 @@ The prompt is only the router. The selected skill owns the procedure, artifact, 
 | `trace` | `stage1_extraction/output/execution_trace.json` |
 | `map` | `policy/policy_registry.yaml` |
 | `model` | `artifacts/semantic_ir/<module>.json` |
-| `validate` | `artifacts/evidence/runs/<run-id>/evidence.json` |
+| `validate` | `artifacts/evidence/runs/<run-id>/evidence.json` and `tieout_result.json` when local parity is required |
 | `review` | `artifacts/reviews/<run-id>.md` |
 | `release` | `artifacts/releases/<run-id>/release_packet.md` |
 
@@ -182,12 +204,10 @@ The `.gitignore` protects local source intake, incoming runtime evidence, and co
 ## Maintainer validation
 
 ```bash
-python scripts/validate_project.py
-python scripts/validate_agent_architecture.py
-python -m unittest tests.architecture.test_agent_workflow
+python scripts/smoke_test.py
 ```
 
-A fresh template checkout should pass these checks while containing no active module, no generated implementation, and no run evidence.
+A fresh template checkout should pass structural and architecture validation plus the synthetic generic tie-out PASS/FAIL/BLOCKED cases while containing no active module, no generated implementation, and no real run evidence.
 
 ## Next reading
 
@@ -197,4 +217,5 @@ Read the following in order:
 2. [`config/workflow.yaml`](config/workflow.yaml) for acts, gates, and artifact paths.
 3. [`docs/runbooks/STAGE_CONTRACT.md`](docs/runbooks/STAGE_CONTRACT.md) for the standard Stage Result.
 4. [`docs/runbooks/INTAKE.md`](docs/runbooks/INTAKE.md) for local source onboarding.
-5. [`examples/lc-logit-01/README.md`](examples/lc-logit-01/README.md) for the documentation-only example.
+5. [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md) for contract-driven SAS-to-Python tie-out.
+6. [`examples/lc-logit-01/README.md`](examples/lc-logit-01/README.md) for the documentation-only example.

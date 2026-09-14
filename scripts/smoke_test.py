@@ -20,8 +20,9 @@ def main() -> int:
     run("scripts/validate_project.py")
     run("scripts/validate_agent_architecture.py")
     run("-m", "unittest", "-v", "tests.architecture.test_agent_workflow")
+    run("-m", "unittest", "-v", "tests.framework.test_generic_tieout")
     print("TEMPLATE SMOKE TEST: PASS")
-    print("Boundary: this validates repository machinery only; it executes no SAS or migration implementation.")
+    print("Boundary: this validates repository machinery and synthetic comparator cases only; it executes no SAS or migration implementation.")
     return 0
 
 

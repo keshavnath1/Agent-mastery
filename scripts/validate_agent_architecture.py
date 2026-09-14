@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 
 import yaml
+from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,11 +68,17 @@ def main() -> int:
     require(migration_profile.get("selected_adapter") is None, "Template must not select a runtime adapter", errors)
 
     tieout = yaml.safe_load(text("config/tieout.yaml"))
+    tieout_schema = json.loads(text("contracts/tieout_contract.schema.json"))
+    tieout_schema_errors = sorted(Draft202012Validator(tieout_schema).iter_errors(tieout), key=lambda item: list(item.absolute_path))
+    require(not tieout_schema_errors, f"Tie-out template fails its schema: {[error.message for error in tieout_schema_errors[:5]]}", errors)
     require(tieout.get("status") == "UNAPPROVED_TEMPLATE", "Tie-out contract must be unapproved", errors)
     require(tieout.get("module_id") is None, "Tie-out contract must not contain a module ID", errors)
     require(tieout.get("key_columns") == [], "Template must not invent tie-out keys", errors)
-    require(tieout.get("required_prediction_columns") == [], "Template must not invent output columns", errors)
+    require(tieout.get("oracle", {}).get("path") is None, "Template must not select a SAS oracle", errors)
+    require(tieout.get("fixture_manifest", {}).get("path") is None, "Template must not select a parity fixture", errors)
+    require(tieout.get("producer", {}).get("command") == [], "Template must not invent a producer command", errors)
     require(tieout.get("comparisons") == [], "Template must not invent metrics or tolerances", errors)
+    require(tieout.get("output", {}).get("result_path") == "artifacts/evidence/runs/{run_id}/tieout_result.json", "Wrong generic tie-out result path", errors)
     require(tieout.get("oracle_lock", {}).get("implementation_may_modify") is False, "Implementation must not modify the tie-out contract", errors)
 
     workflow = yaml.safe_load(text("config/workflow.yaml"))
@@ -104,7 +111,11 @@ def main() -> int:
     orchestrate_pressure = text(".github/skills/orchestrate/evals/cases.md")
     stage_contract = text("docs/runbooks/STAGE_CONTRACT.md")
     specify_skill = text(".github/skills/specify/SKILL.md")
+    generate_skill = text(".github/skills/generate/SKILL.md")
+    test_skill = text(".github/skills/test/SKILL.md")
+    validate_skill = text(".github/skills/validate/SKILL.md")
     restart_skill = text(".github/skills/restart/SKILL.md")
+    tieout_runner = text("scripts/run_tieout.py")
 
     require("stage1_extraction/output/execution_trace.json" in trace_skill, "Trace skill lacks canonical path", errors)
     require("artifacts/traces/<module>.json" not in trace_skill, "Trace skill retains a competing editable path", errors)
@@ -116,7 +127,11 @@ def main() -> int:
     require("**Copy/paste next:**" in stage_contract, "Stage contract lacks copy-ready next message", errors)
     require("Missing output hash" in orchestrate_pressure, "Orchestrate evaluations lack missing-hash coverage", errors)
     require("Recovery handoff" in orchestrate_pressure, "Orchestrate evaluations lack recovery coverage", errors)
-    require("approved project-level contracts" in specify_skill, "Specify does not preserve approved project contracts", errors)
+    require("config/tieout.yaml" in specify_skill and "tieout_contract.schema.json" in specify_skill, "Specify does not materialize an executable draft tie-out contract", errors)
+    require("producer entry point" in generate_skill and "never reads the SAS oracle" in generate_skill, "Generate does not provide an oracle-isolated parity producer", errors)
+    require("fixture_manifest.schema.json" in test_skill and "scripts/run_tieout.py" in test_skill, "Test lacks governed fixture and comparator coverage", errors)
+    require("scripts/project.py tieout" in validate_skill and "tieout_result.json" in validate_skill, "Validate does not require generic parity execution", errors)
+    require("shell=False" in tieout_runner and "hash_keys_in_evidence" in text("config/tieout.yaml"), "Generic tie-out runner lacks safe execution or key privacy", errors)
     require("config/tieout.yaml" in restart_skill, "Restart does not account for approved tie-out contracts", errors)
     require("runtime-neutral semantic responsibilities" in map_skill, "Map skill lacks taxonomy-neutral fallback", errors)
     require("optional refinements" in map_contract, "Map contract does not make taxonomies optional", errors)
@@ -130,6 +145,9 @@ def main() -> int:
         ROOT / ".github/skills/restart/schemas/reset_plan.schema.json",
         ROOT / ".github/skills/harvest/schemas/pattern_bundle.schema.json",
         ROOT / ".github/skills/import/schemas/compatibility_matrix.schema.json",
+        ROOT / "contracts/tieout_contract.schema.json",
+        ROOT / "contracts/tieout_result.schema.json",
+        ROOT / "contracts/fixture_manifest.schema.json",
     ]
     for path in schema_paths:
         require(path.exists(), f"Missing schema: {path.relative_to(ROOT)}", errors)
@@ -154,9 +172,14 @@ def main() -> int:
         require(f"| {number} |" in golden_rules, f"Golden Rule {number} missing", errors)
     require("approved target ADR" in golden_rules, "Golden Rules lack ADR applicability boundary", errors)
 
+    require((ROOT / "docs/runbooks/LOCAL_PARITY.md").exists(), "Missing local parity runbook", errors)
+    require((ROOT / "scripts/run_tieout.py").exists(), "Missing generic tie-out runner", errors)
+
     for relative in [
         ".github/skills/restart/evals/cases.md",
         ".github/skills/specify/evals/cases.md",
+        ".github/skills/test/evals/cases.md",
+        ".github/skills/validate/evals/cases.md",
         ".github/skills/trace/evals/cases.md",
         ".github/skills/map/evals/cases.md",
         ".github/skills/harvest/evals/cases.md",

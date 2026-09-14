@@ -1,32 +1,31 @@
 ---
 name: generate
-description: Generate the backend-neutral Python semantic implementation from the approved SPEC, policy registry, semantic IR, and target ADRs. Use only after all prerequisite gates pass.
+description: Generate the backend-neutral Python semantic implementation and approved parity-output producer from the SPEC, policy registry, semantic IR, target ADRs, and draft evidence contract.
 ---
 
 # Generate
 
 ## Trigger
 
-Use only when durable run state authorizes `generate`. Read `AGENTS.md`, `config/workflow.yaml`, the approved SPEC and ADRs, canonical `policy/policy_registry.yaml`, and approved semantic IR.
+Use only when durable run state authorizes `generate`. Read `AGENTS.md`, `config/workflow.yaml`, the approved SPEC and ADRs, canonical policy registry, semantic IR, and schema-valid draft `config/tieout.yaml`.
 
 ## Required inputs
 
 - Approved module SPEC and acceptance criteria.
 - Approved target ADRs.
-- Canonical policy registry and hash.
-- Approved semantic IR and implementation plan.
+- Canonical policy registry and approved semantic IR.
+- Draft tie-out contract containing the approved producer command shape and actual-output path.
 - Selected imported patterns with provenance, if any.
-- Applicable coding policies. Load `docs/policies/lp-emulator-golden-rules.md` only when an approved ADR activates it.
 
 ## Workflow
 
-1. Verify that every implemented requirement resolves to the SPEC, semantic IR, and policy-registry behavior ID.
-2. Generate the smallest pure Python/NumPy semantic core; preserve keys, types, missing values, categories, formulas, state reset, and calculation order.
+1. Verify that every implemented requirement resolves to a SPEC, semantic IR, and policy-registry behavior ID.
+2. Generate the smallest pure Python semantic core; preserve keys, types, missing values, categories, formulas, state reset, and calculation order.
 3. Keep runtime-specific code out of the semantic core and prevent duplicate formula ownership.
-4. Apply selected patterns and rule IDs only within their approved applicability.
-5. Add requirement and behavior citations to code and tests.
-6. Run approved static and unit checks through the skill workflow.
-7. Write the implementation evidence, return `PASS`, `FAIL`, or `BLOCKED`, and stop without invoking `test`.
+4. Implement the deterministic producer command declared in `config/tieout.yaml`. It must read only governed fixture inputs and write only the configured actual-output CSV under `artifacts/generated/<run-id>/`.
+5. Ensure the producer emits every configured key and actual comparison column, returns non-zero on execution failure, and never reads the SAS oracle or expected columns.
+6. Apply selected patterns only within approved applicability, add requirement citations, and run static/unit checks.
+7. Record implementation evidence and stop without invoking `test` or `validate`.
 
 ## Output artifact
 
@@ -34,14 +33,16 @@ Use only when durable run state authorizes `generate`. Read `AGENTS.md`, `config
 src/sas_migration/semantic/
 ```
 
+plus the module-specific producer entry point declared by the approved contract.
+
 ## Verification
 
-Every implementation unit traces to approved requirements and behavior IDs; applicable Golden Rules and approved exceptions are cited; static and unit checks pass; protected artifacts remain unchanged.
+Every implementation unit traces to approved behavior IDs; the configured producer command resolves without a shell, creates the declared CSV from governed fixture inputs, and cannot access or rewrite protected oracle evidence.
 
 ## Boundaries
 
-Do not change PRD, SPEC, ADRs, semantic IR, policy registry, expected evidence, keys, tolerances, comparator, or protected outputs. Do not embed PySpark, Ray, Cython, or LP Emulator runtime code in the semantic formula owner. Do not invent missing behavior.
+Do not change PRD, SPEC, ADRs, semantic IR, policy registry, expected evidence, fixture selection, keys, tolerances, comparator, proof boundary, or oracle lock. Do not embed selected-runtime code in the semantic formula owner. Never generate expected output from the implementation under test.
 
 ## Stop conditions
 
-Stop on incomplete IR, unresolved policy entry, missing approval, conflicting pattern, duplicate semantic owner, rule conflict, or any required unapproved assumption.
+Stop on incomplete IR, unresolved policy, missing producer contract, missing approved input schema, duplicate semantic owner, rule conflict, oracle access by the producer, or any required unapproved assumption.

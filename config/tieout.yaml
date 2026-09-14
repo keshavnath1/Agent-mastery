@@ -1,19 +1,52 @@
 status: UNAPPROVED_TEMPLATE
 module_id: null
-contract_version: "template-1"
+contract_version: "template-2"
+
 scope:
   fixture_kind: null
-  fixture_path: null
   record_count: null
   proves: []
   does_not_prove:
-    - any behavior until requirements, oracle, keys, metrics, and tolerances are approved
+    - any behavior until the oracle, fixture, keys, comparisons, tolerances, producer, and proof boundary are human-approved
+
 key_columns: []
-required_prediction_columns: []
+
+oracle:
+  path: null
+  sha256: null
+
+fixture_manifest:
+  path: null
+  sha256: null
+
+producer:
+  # Use an argv list, never a shell string. The runner replaces {python},
+  # {root}, {run_id}, and {actual_output_path} tokens deterministically.
+  command: []
+  cwd: "."
+  actual_output_path: null
+  timeout_seconds: 300
+
 comparisons: []
-decision_basis:
-  source: human_approved_specification
-  rationale: null
+# Example structure only; do not copy values without human approval:
+# comparisons:
+#   - name: score
+#     expected_column: sas_score
+#     actual_column: python_score
+#     mode: absolute
+#     tolerance: 1.0e-10
+#     scale_floor: 1.0e-15
+#     null_equal: false
+
+output:
+  result_path: artifacts/evidence/runs/{run_id}/tieout_result.json
+  evidence_path: artifacts/evidence/runs/{run_id}/evidence.json
+
+privacy:
+  hash_keys_in_evidence: true
+  include_values_in_evidence: false
+  max_mismatches: 100
+
 oracle_lock:
   status: UNAPPROVED
   human_approval_required: true
@@ -21,6 +54,10 @@ oracle_lock:
   approved_on: null
   approval_scope: null
   implementation_may_modify: false
+
 notes:
-  - The interview and specify stages must define the acceptance evidence required by the actual SAS problem.
-  - Never copy tolerances, keys, expected outputs, or fixture sizes from the LC-LOGIT-01 example.
+  - The specify stage must replace every null or empty execution field with human-approved module values.
+  - The test stage must create and hash the governed fixture manifest and expected oracle without deriving expected output from generated Python.
+  - The generate stage must provide the producer declared above; the producer may write actual output only.
+  - The validate stage must invoke the generic tie-out runner and cannot claim local parity without its PASS evidence.
+  - Never copy keys, fixture sizes, columns, metrics, or tolerances from a documentation example.
