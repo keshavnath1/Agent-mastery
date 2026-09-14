@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "compatibility_matrix.schema.json",
+  "title": "Pattern Import Compatibility Matrix",
+  "type": "object",
+  "required": ["import_id", "module_id", "target_adrs", "bundles", "decisions", "status", "human_approval"],
+  "properties": {
+    "import_id": {"type": "string"},
+    "module_id": {"type": "string"},
+    "target_adrs": {"type": "array", "items": {"type": "string"}},
+    "bundles": {"type": "array", "items": {"type": "object"}},
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["responsibility", "bundle_id", "pattern_id", "runtime_family", "semantic_owner", "decision", "reason"],
+        "properties": {
+          "responsibility": {"type": "string"},
+          "bundle_id": {"type": "string"},
+          "pattern_id": {"type": "string"},
+          "runtime_family": {"type": "string"},
+          "semantic_owner": {"type": "string"},
+          "adapter_owner": {"type": ["string", "null"]},
+          "decision": {"enum": ["SELECT", "REJECT", "DEFER", "UNRESOLVED"]},
+          "reason": {"type": "string"},
+          "target_paths": {"type": "array"},
+          "validation": {"type": "array"},
+          "rollback": {"type": "string"}
+        }
+      }
+    },
+    "conflicts": {"type": "array"},
+    "status": {"enum": ["PROPOSED", "APPROVED", "EXECUTED", "BLOCKED"]},
+    "human_approval": {
+      "type": "object",
+      "required": ["required", "approved_by", "approved_at"],
+      "properties": {
+        "required": {"const": true},
+        "approved_by": {"type": ["string", "null"]},
+        "approved_at": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

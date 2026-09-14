@@ -1,0 +1,34 @@
+{
+  "trace_version": "2.0",
+  "generated_by": "GitHub Copilot Agent Mode - trace",
+  "source_scope": {
+    "sas_source_roots": [],
+    "sas_log_roots": [],
+    "files_scanned": {
+      "sas_programs": [],
+      "logs": [],
+      "lst_files": []
+    }
+  },
+  "scripts": {},
+  "logs": {},
+  "cross_program_summary": {
+    "datasets_produced": [],
+    "datasets_consumed": [],
+    "high_risk_patterns": [],
+    "unresolved_dependencies": []
+  },
+  "governance": {
+    "module_id": "",
+    "run_id": "",
+    "source_manifest_hash": "",
+    "generated_at": "",
+    "approval_status": "CANDIDATE"
+  },
+  "uncertainties": [],
+  "evidence_citations": [],
+  "schema_validation": {
+    "status": "PENDING",
+    "schema": ".github/skills/trace/schemas/execution_trace.schema.json"
+  }
+}

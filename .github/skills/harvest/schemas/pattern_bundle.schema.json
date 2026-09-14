@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pattern_bundle.schema.json",
+  "title": "Portable Pattern Bundle",
+  "type": "object",
+  "required": ["bundle_id", "bundle_version", "source_workspace", "source_commit", "source_adrs", "patterns", "integrity", "approval_status"],
+  "properties": {
+    "bundle_id": {"type": "string"},
+    "bundle_version": {"type": "string"},
+    "source_workspace": {"type": "string"},
+    "source_commit": {"type": "string"},
+    "source_adrs": {"type": "array", "items": {"type": "object"}},
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pattern_id", "responsibility", "runtime_family", "source_paths", "tests", "applicability", "counterexamples", "evidence_status"],
+        "properties": {
+          "pattern_id": {"type": "string"},
+          "responsibility": {"type": "string"},
+          "runtime_family": {"enum": ["python_semantic", "lp_emulator", "pyspark", "ray", "cython", "testing", "deployment", "other"]},
+          "source_paths": {"type": "array"},
+          "tests": {"type": "array"},
+          "templates": {"type": "array"},
+          "rules": {"type": "array"},
+          "applicability": {"type": "object"},
+          "counterexamples": {"type": "array"},
+          "conflicts_with": {"type": "array"},
+          "performance_claims": {"type": "array"},
+          "evidence_status": {"enum": ["MEASURED", "OBSERVED", "INFERRED_NOT_APPROVED", "UNVERIFIED"]}
+        }
+      }
+    },
+    "licensing": {"type": "object"},
+    "integrity": {
+      "type": "object",
+      "required": ["files", "bundle_sha256", "secret_scan"],
+      "properties": {
+        "files": {"type": "array"},
+        "bundle_sha256": {"type": "string"},
+        "secret_scan": {"enum": ["PASS", "FAIL"]}
+      }
+    },
+    "approval_status": {"enum": ["CANDIDATE", "REVIEWED", "APPROVED", "REJECTED", "BLOCKED"]}
+  }
+}

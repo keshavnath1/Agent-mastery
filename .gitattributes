@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.sas text eol=lf
+*.log text eol=lf whitespace=-blank-at-eol
+*.lst text eol=lf whitespace=-blank-at-eol
+*.csv text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.parquet binary
+*.sas7bdat binary

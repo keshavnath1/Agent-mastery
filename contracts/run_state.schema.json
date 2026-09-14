@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Run State",
+  "type": "object",
+  "required": [
+    "run_id",
+    "module_id",
+    "stage",
+    "status",
+    "attempts",
+    "history"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "module_id": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,38 @@
+schema_version: "1.0"
+restart_id: RESTART-YYYYMMDD-HHMMSS
+module_id: ""
+status: PROPOSED
+reason: ""
+requested_by: ""
+previous_run:
+  run_id: ""
+  current_stage: ""
+  current_status: ""
+  proposed_terminal_status: ABANDONED_BY_USER_RESET
+source_manifest:
+  path: artifacts/evidence/intake_manifest.json
+  sha256: ""
+approved_project_contracts: []
+protected_paths: []
+classifications:
+  authoritative_raw_input: []
+  project_machinery: []
+  historical_evidence: []
+  unapproved_experiment: []
+  approved_artifact: []
+proposed_moves: []
+new_run:
+  run_id: ""
+  stage: intake
+  status: READY
+  attempts: 0
+human_approval:
+  required: true
+  approved_by: null
+  approved_at: null
+verification:
+  git_history_preserved: false
+  protected_hashes_unchanged: false
+  previous_run_preserved: false
+  new_run_at_intake_ready: false
+  downstream_stage_executed: false

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-mastery-sas-migration"
+version = "0.1.0"
+description = "Specification-driven SAS to Python to selected-runtime migration framework for GitHub Copilot Agent Mode"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0,<7", "jsonschema>=4.0,<5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

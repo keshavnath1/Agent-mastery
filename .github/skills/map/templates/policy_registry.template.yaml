@@ -1,0 +1,36 @@
+registry_version: "2.0"
+module_id: ""
+source_trace:
+  path: stage1_extraction/output/execution_trace.json
+  sha256: ""
+target_adrs: []
+patterns:
+  - pattern_id: B001
+    sas_code_block: ""
+    target_module_type: ""
+    complexity: LOW
+    source_locations: []
+    source_excerpt_sha256: ""
+    input_columns: []
+    output_columns: []
+    dependencies: []
+    stateful_constructs: []
+    candidate_patterns: []
+    selected_pattern: null
+    selected_pattern_bundle_hash: null
+    semantic_owner: ""
+    adapter_owner: null
+    applicable_adr_ids: []
+    test_owners: []
+    unresolved: []
+    status: UNRESOLVED
+coverage:
+  mapped: 0
+  deferred: 0
+  unresolved: 1
+  total_traced_behaviors: 1
+governance:
+  run_id: ""
+  generated_at: ""
+  approval_status: CANDIDATE
+  schema_validation: PENDING

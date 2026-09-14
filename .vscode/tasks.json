@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Migration: Validate Template",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": ["scripts/project.py", "validate"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Migration: Run Framework Smoke Checks",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": ["scripts/project.py", "smoke"],
+      "group": {"kind": "test", "isDefault": true},
+      "problemMatcher": []
+    },
+    {
+      "label": "Migration: Inventory Local Intake",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": ["scripts/project.py", "intake"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Migration: Show Durable State",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": ["scripts/project.py", "status"],
+      "problemMatcher": []
+    }
+  ]
+}

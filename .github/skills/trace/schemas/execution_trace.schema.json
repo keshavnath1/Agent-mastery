@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "execution_trace.schema.json",
+  "title": "SAS Execution Trace",
+  "type": "object",
+  "required": ["trace_version", "generated_by", "source_scope", "scripts", "logs", "cross_program_summary"],
+  "properties": {
+    "trace_version": {"type": "string"},
+    "generated_by": {"type": "string"},
+    "source_scope": {
+      "type": "object",
+      "required": ["sas_source_roots", "sas_log_roots", "files_scanned"],
+      "properties": {
+        "sas_source_roots": {"type": "array", "items": {"type": "string"}},
+        "sas_log_roots": {"type": "array", "items": {"type": "string"}},
+        "files_scanned": {
+          "type": "object",
+          "required": ["sas_programs", "logs", "lst_files"],
+          "properties": {
+            "sas_programs": {"type": "array", "items": {"type": "string"}},
+            "logs": {"type": "array", "items": {"type": "string"}},
+            "lst_files": {"type": "array", "items": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "scripts": {"type": "object"},
+    "logs": {"type": "object"},
+    "cross_program_summary": {
+      "type": "object",
+      "required": ["datasets_produced", "datasets_consumed", "high_risk_patterns", "unresolved_dependencies"],
+      "properties": {
+        "datasets_produced": {"type": "array", "items": {"type": "string"}},
+        "datasets_consumed": {"type": "array", "items": {"type": "string"}},
+        "high_risk_patterns": {"type": "array"},
+        "unresolved_dependencies": {"type": "array"}
+      }
+    },
+    "governance": {
+      "type": "object",
+      "properties": {
+        "module_id": {"type": "string"},
+        "run_id": {"type": "string"},
+        "source_manifest_hash": {"type": "string"},
+        "generated_at": {"type": "string"},
+        "approval_status": {"enum": ["CANDIDATE", "ACCEPTED", "REJECTED", "BLOCKED"]}
+      }
+    },
+    "uncertainties": {"type": "array"},
+    "evidence_citations": {"type": "array"},
+    "schema_validation": {"type": "object"}
+  }
+}

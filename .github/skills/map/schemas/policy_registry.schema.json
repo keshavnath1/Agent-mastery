@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "policy_registry.schema.json",
+  "title": "SAS Migration Policy Registry",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["registry_version", "module_id", "source_trace", "patterns", "coverage"],
+  "properties": {
+    "registry_version": {"type": "string"},
+    "module_id": {"type": "string", "minLength": 1},
+    "source_trace": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "stage1_extraction/output/execution_trace.json"},
+        "sha256": {"type": "string", "minLength": 1}
+      }
+    },
+    "target_adrs": {"type": "array", "items": {"type": "string"}},
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pattern_id", "sas_code_block", "target_module_type", "complexity", "semantic_owner", "status"],
+        "properties": {
+          "pattern_id": {"type": "string"},
+          "sas_code_block": {"type": "string"},
+          "target_module_type": {"type": "string"},
+          "complexity": {"enum": ["LOW", "MEDIUM", "HIGH"]},
+          "source_locations": {"type": "array"},
+          "source_excerpt_sha256": {"type": "string"},
+          "input_columns": {"type": "array"},
+          "output_columns": {"type": "array"},
+          "dependencies": {"type": "array"},
+          "stateful_constructs": {"type": "array"},
+          "candidate_patterns": {"type": "array"},
+          "selected_pattern": {"type": ["string", "null"]},
+          "selected_pattern_bundle_hash": {"type": ["string", "null"]},
+          "semantic_owner": {"type": "string"},
+          "adapter_owner": {"type": ["string", "null"]},
+          "applicable_adr_ids": {"type": "array"},
+          "test_owners": {"type": "array"},
+          "unresolved": {"type": "array"},
+          "status": {"enum": ["MAPPED", "DEFERRED", "UNRESOLVED", "BLOCKED"]}
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["mapped", "deferred", "unresolved", "total_traced_behaviors"],
+      "properties": {
+        "mapped": {"type": "integer", "minimum": 0},
+        "deferred": {"type": "integer", "minimum": 0},
+        "unresolved": {"type": "integer", "minimum": 0},
+        "total_traced_behaviors": {"type": "integer", "minimum": 0}
+      }
+    },
+    "governance": {"type": "object"}
+  }
+}

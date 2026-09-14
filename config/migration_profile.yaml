@@ -1,0 +1,23 @@
+profile_version: 1
+status: UNAPPROVED_TEMPLATE
+module_id: null
+business_outcome: null
+migration_mode: null
+source_runtime: SAS
+semantic_runtime: null
+semantic_implementation: null
+selected_adapter: null
+cluster_execution: null
+human_approval_required:
+  - migration_intent
+  - prd
+  - specification
+  - architecture_decision
+  - oracle_or_tolerance_change
+  - repair_integration
+  - merge
+  - release
+  - learning_promotion
+notes:
+  - Populate this profile only through the interview skill and human approval.
+  - Do not infer business intent, expected results, tolerances, or runtime from source code alone.

@@ -1,0 +1,12 @@
+profile_version: 1
+status: UNAPPROVED_TEMPLATE
+local_semantic_runtime: null
+adapter: null
+cluster:
+  required: null
+  execution_mode: null
+  scheduler: null
+  required_evidence: []
+notes:
+  - Select the semantic runtime and any adapter only through approved requirements and ADRs.
+  - Local semantic proof does not establish distributed or cluster correctness.

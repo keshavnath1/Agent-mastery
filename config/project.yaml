@@ -1,0 +1,7 @@
+project_id: sas-migration-template
+project_name: Agent-Mastery SAS Migration Template
+status: TEMPLATE
+active_module: null
+active_stage: null
+source_of_truth: committed_artifacts
+user_interface: github_copilot_agent_mode

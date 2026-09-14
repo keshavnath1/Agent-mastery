@@ -1,0 +1,119 @@
+schema_version: "1.0"
+workflow_id: sas-migration-agent-mastery
+entry_prompts:
+  new_or_resume: /start-migration
+  restart: /restart-migration
+  continue: /run-next-stage
+  trace_legacy_alias: /run-stage1
+  map_legacy_alias: /run-stage2
+  seed_patterns: /seed-production-patterns
+  evidence_ingest: /ingest-cluster-log
+  failure_analysis: /analyze-failure
+  independent_review: /review-evidence
+control_rules:
+  prompt_routes_only: true
+  orchestrator_owns_transition: true
+  one_skill_per_prompt: true
+  skill_owns_workflow: true
+  deterministic_tools_invoked_by_skill: true
+  durable_run_state_required: true
+  previous_gate_must_pass: true
+  stop_at_human_gate: true
+  self_approval_forbidden: true
+  protected_evidence_mutation_forbidden: true
+  maximum_repair_attempts: 3
+  stop_same_failure_without_new_evidence: 2
+acts:
+  - id: align
+    order: 1
+    skills:
+      - interview
+      - specify
+      - decide
+  - id: reuse_and_reconstruct
+    order: 2
+    skills:
+      - harvest
+      - import
+      - trace
+      - map
+      - model
+    optional_skills:
+      - harvest
+      - import
+  - id: build_and_prove
+    order: 3
+    skills:
+      - generate
+      - test
+      - validate
+  - id: adapt_and_operate
+    order: 4
+    skills:
+      - adapt
+      - ingest
+      - review
+      - release
+  - id: improve
+    order: 5
+    skills:
+      - learn
+recovery_loop:
+  trigger_statuses:
+    - FAIL
+    - BLOCKED
+  sequence:
+    - ingest
+    - diagnose
+    - repair
+    - review
+  require_loop_contract: true
+  require_isolated_worktree: true
+  rerun_earliest_failed_gate: true
+canonical_artifacts:
+  intake_manifest: artifacts/evidence/intake_manifest.json
+  migration_profile: config/migration_profile.yaml
+  tieout_contract: config/tieout.yaml
+  prd: docs/PRD.md
+  capability_map: docs/CAPABILITY_MAP.md
+  module_spec: docs/specs/<module>.md
+  adrs: docs/adrs/
+  execution_trace: stage1_extraction/output/execution_trace.json
+  policy_registry: policy/policy_registry.yaml
+  semantic_ir: artifacts/semantic_ir/<module>.json
+  implementation: src/sas_migration/semantic/
+  evidence: artifacts/evidence/runs/<run-id>/evidence.json
+  release_packet: artifacts/releases/<run-id>/release_packet.md
+  learning_record: artifacts/learning/<module>.md
+human_gates:
+  - after: interview
+    approval: migration intent confirmation
+  - after: specify
+    approval: PRD and module SPEC approval
+  - after: decide
+    approval: ADR approval
+  - after: harvest
+    approval: candidate bundle review
+  - before: import
+    approval: exact import preview approval
+  - after: validate
+    approval: behavior evidence acceptance
+  - after: review
+    approval: merge or release decision
+  - before: learn_promotion
+    approval: pattern or skill promotion
+stage_result_fields:
+  - module
+  - run
+  - act
+  - skill_invoked
+  - input_artifact
+  - output_artifact
+  - gate
+  - human_approval_required
+  - files_changed
+  - protected_files_unchanged
+  - next_permitted_command
+  - next_action
+  - copy_paste_next
+  - stop_reason

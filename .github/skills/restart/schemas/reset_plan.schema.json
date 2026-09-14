@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reset_plan.schema.json",
+  "title": "Migration Restart Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "restart_id",
+    "module_id",
+    "status",
+    "reason",
+    "previous_run",
+    "source_manifest",
+    "approved_project_contracts",
+    "protected_paths",
+    "classifications",
+    "proposed_moves",
+    "new_run",
+    "human_approval",
+    "verification"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "restart_id": {"type": "string", "minLength": 1},
+    "module_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["PROPOSED", "APPROVED", "EXECUTED", "BLOCKED"]},
+    "reason": {"type": "string"},
+    "requested_by": {"type": "string"},
+    "previous_run": {
+      "type": "object",
+      "required": ["run_id", "current_stage", "current_status", "proposed_terminal_status"],
+      "properties": {
+        "run_id": {"type": "string"},
+        "current_stage": {"type": "string"},
+        "current_status": {"type": "string"},
+        "proposed_terminal_status": {"const": "ABANDONED_BY_USER_RESET"}
+      }
+    },
+    "source_manifest": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string"}
+      }
+    },
+    "approved_project_contracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "status", "approval_scope"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string"},
+          "status": {"type": "string", "minLength": 1},
+          "approval_scope": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "protected_paths": {"type": "array", "items": {"type": "string"}},
+    "classifications": {
+      "type": "object",
+      "required": ["authoritative_raw_input", "project_machinery", "historical_evidence", "unapproved_experiment", "approved_artifact"],
+      "properties": {
+        "authoritative_raw_input": {"type": "array", "items": {"type": "string"}},
+        "project_machinery": {"type": "array", "items": {"type": "string"}},
+        "historical_evidence": {"type": "array", "items": {"type": "string"}},
+        "unapproved_experiment": {"type": "array", "items": {"type": "string"}},
+        "approved_artifact": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "proposed_moves": {"type": "array", "items": {"type": "object"}},
+    "new_run": {
+      "type": "object",
+      "required": ["run_id", "stage", "status", "attempts"],
+      "properties": {
+        "run_id": {"type": "string"},
+        "stage": {"const": "intake"},
+        "status": {"const": "READY"},
+        "attempts": {"const": 0}
+      }
+    },
+    "human_approval": {
+      "type": "object",
+      "required": ["required", "approved_by", "approved_at"],
+      "properties": {
+        "required": {"const": true},
+        "approved_by": {"type": ["string", "null"]},
+        "approved_at": {"type": ["string", "null"]}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["git_history_preserved", "protected_hashes_unchanged", "previous_run_preserved", "new_run_at_intake_ready", "downstream_stage_executed"],
+      "properties": {
+        "git_history_preserved": {"type": "boolean"},
+        "protected_hashes_unchanged": {"type": "boolean"},
+        "previous_run_preserved": {"type": "boolean"},
+        "new_run_at_intake_ready": {"type": "boolean"},
+        "downstream_stage_executed": {"const": false}
+      }
+    }
+  }
+}

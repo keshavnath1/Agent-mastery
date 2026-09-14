@@ -1,0 +1,26 @@
+status: UNAPPROVED_TEMPLATE
+module_id: null
+contract_version: "template-1"
+scope:
+  fixture_kind: null
+  fixture_path: null
+  record_count: null
+  proves: []
+  does_not_prove:
+    - any behavior until requirements, oracle, keys, metrics, and tolerances are approved
+key_columns: []
+required_prediction_columns: []
+comparisons: []
+decision_basis:
+  source: human_approved_specification
+  rationale: null
+oracle_lock:
+  status: UNAPPROVED
+  human_approval_required: true
+  approved_by: null
+  approved_on: null
+  approval_scope: null
+  implementation_may_modify: false
+notes:
+  - The interview and specify stages must define the acceptance evidence required by the actual SAS problem.
+  - Never copy tolerances, keys, expected outputs, or fixture sizes from the LC-LOGIT-01 example.

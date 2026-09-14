@@ -1,0 +1,49 @@
+# Operating-system and editor files.
+.DS_Store
+Thumbs.db
+.vscode/*.local.json
+
+# Local Python environments and generated caches.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Secrets and local settings.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local SAS source and business evidence. Keep only directory placeholders.
+intake/sas/*
+!intake/sas/.gitkeep
+intake/logs/*
+!intake/logs/.gitkeep
+intake/lst/*
+!intake/lst/.gitkeep
+intake/data/*
+!intake/data/.gitkeep
+intake/patterns/*
+!intake/patterns/.gitkeep
+
+# Runtime/cluster evidence is local until independently reviewed.
+cluster_evidence/incoming/*
+!cluster_evidence/incoming/.gitkeep
+
+# Temporary run-state backups and repair worktrees.
+artifacts/run_state/*.bak
+.worktrees/
+*.patch
+
+# Local publication/export scratch files.
+.agent-mastery-template-base.tar

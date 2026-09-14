@@ -1,0 +1,22 @@
+import_id: ""
+module_id: ""
+target_adrs: []
+bundles: []
+decisions:
+  - responsibility: ""
+    bundle_id: ""
+    pattern_id: ""
+    runtime_family: ""
+    semantic_owner: ""
+    adapter_owner: null
+    decision: UNRESOLVED
+    reason: ""
+    target_paths: []
+    validation: []
+    rollback: ""
+conflicts: []
+status: PROPOSED
+human_approval:
+  required: true
+  approved_by: null
+  approved_at: null
