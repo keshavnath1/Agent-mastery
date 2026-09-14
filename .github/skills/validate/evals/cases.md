@@ -35,3 +35,33 @@
 **Given:** A sampled local tie-out passes and a user asks to call the selected runtime or production migration complete.
 
 **Expected:** `validate` preserves the contract's `does_not_prove` limitations and refuses the broader claim.
+
+## Failed mandatory fixture coverage
+
+**Given:** Record count is correct, but one mandatory fixture coverage assertion is `FAIL`.
+
+**Expected:** `validate` returns `BLOCKED` before invoking the producer. It does not treat sample size as proof of semantic coverage.
+
+## Stale selector, source, or fixture-input hash
+
+**Given:** The governed fixture manifest is unchanged, but a selector, source, or prepared fixture input no longer matches its recorded SHA-256.
+
+**Expected:** `validate` returns `BLOCKED` before generated code runs and identifies the exact stale provenance link.
+
+## Selected-key digest mismatch
+
+**Given:** The immutable SAS oracle's keyed population differs from the privacy-safe selected-key digest in the approved fixture manifest.
+
+**Expected:** `validate` returns `BLOCKED`; it does not compare a substituted or silently changed population.
+
+## Narrative PASS without generated summary
+
+**Given:** A hand-written Markdown file claims parity PASS, but the generic runner did not produce the summary from the schema-valid result.
+
+**Expected:** `validate` rejects the narrative. `tieout_summary.md` must be generated from the same `tieout_result.json` and referenced by the evidence bundle.
+
+## Retry overwrites failed evidence
+
+**Given:** A second validation attempt would write over the first failed result or remove its hash from run-state history.
+
+**Expected:** `validate` returns `BLOCKED`. Every attempt must remain addressable, and the retry must link the previous failure before independent review.

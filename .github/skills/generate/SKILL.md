@@ -23,9 +23,10 @@ Use only when durable run state authorizes `generate`. Read `AGENTS.md`, `config
 2. Generate the smallest pure Python semantic core; preserve keys, types, missing values, categories, formulas, state reset, and calculation order.
 3. Keep runtime-specific code out of the semantic core and prevent duplicate formula ownership.
 4. Implement the deterministic producer command declared in `config/tieout.yaml`. It must read only governed fixture inputs and write only the configured actual-output CSV under `artifacts/generated/<run-id>/`.
-5. Ensure the producer emits every configured key and actual comparison column, returns non-zero on execution failure, and never reads the SAS oracle or expected columns.
-6. Apply selected patterns only within approved applicability, add requirement citations, and run static/unit checks.
-7. Record implementation evidence and stop without invoking `test` or `validate`.
+5. Ensure the producer emits every configured key and actual comparison column, rejects duplicate keys, uses stable row and column ordering, returns non-zero on execution failure, and never reads the SAS oracle, expected columns, or prior actual output.
+6. Make repeated runs over the same governed inputs byte-identical; expose no clock, randomness, network, or environment-dependent behavior unless the approved contract freezes it.
+7. Apply selected patterns only within approved applicability, add requirement citations, and run static/unit checks.
+8. Record implementation evidence and stop without invoking `test` or `validate`.
 
 ## Output artifact
 
@@ -37,7 +38,7 @@ plus the module-specific producer entry point declared by the approved contract.
 
 ## Verification
 
-Every implementation unit traces to approved behavior IDs; the configured producer command resolves without a shell, creates the declared CSV from governed fixture inputs, and cannot access or rewrite protected oracle evidence.
+Every implementation unit traces to approved behavior IDs; the configured producer command resolves without a shell, creates byte-identical schema-valid CSV output from governed fixture inputs, enforces unique keys and stable ordering, and cannot access or rewrite protected oracle evidence.
 
 ## Boundaries
 

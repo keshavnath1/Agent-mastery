@@ -8,10 +8,12 @@
     "contract_version",
     "scope",
     "key_columns",
+    "intake_manifest",
     "oracle",
     "fixture_manifest",
     "producer",
     "comparisons",
+    "decision_basis",
     "output",
     "privacy",
     "oracle_lock"
@@ -44,12 +46,23 @@
       "items": {"type": "string", "minLength": 1},
       "uniqueItems": true
     },
-    "oracle": {
+    "intake_manifest": {
       "type": "object",
       "required": ["path", "sha256"],
       "properties": {
         "path": {"type": ["string", "null"]},
         "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "oracle": {
+      "type": "object",
+      "required": ["path", "sha256", "format", "representation_note"],
+      "properties": {
+        "path": {"type": ["string", "null"]},
+        "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "format": {"type": ["string", "null"]},
+        "representation_note": {"type": ["string", "null"]}
       },
       "additionalProperties": false
     },
@@ -100,11 +113,21 @@
         "additionalProperties": false
       }
     },
+    "decision_basis": {
+      "type": "object",
+      "required": ["source", "rationale"],
+      "properties": {
+        "source": {"type": ["string", "null"]},
+        "rationale": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
     "output": {
       "type": "object",
-      "required": ["result_path", "evidence_path"],
+      "required": ["result_path", "summary_path", "evidence_path"],
       "properties": {
         "result_path": {"type": "string", "minLength": 1},
+        "summary_path": {"type": "string", "minLength": 1},
         "evidence_path": {"type": "string", "minLength": 1}
       },
       "additionalProperties": false
@@ -152,10 +175,18 @@
             }
           },
           "key_columns": {"minItems": 1},
+          "intake_manifest": {
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "sha256": {"type": "string"}
+            }
+          },
           "oracle": {
             "properties": {
-              "path": {"type": "string"},
-              "sha256": {"type": "string"}
+              "path": {"type": "string", "minLength": 1},
+              "sha256": {"type": "string"},
+              "format": {"type": "string", "minLength": 1},
+              "representation_note": {"type": "string", "minLength": 1}
             }
           },
           "fixture_manifest": {
@@ -171,6 +202,12 @@
             }
           },
           "comparisons": {"minItems": 1},
+          "decision_basis": {
+            "properties": {
+              "source": {"type": "string", "minLength": 1},
+              "rationale": {"type": "string", "minLength": 1}
+            }
+          },
           "oracle_lock": {
             "properties": {
               "status": {"const": "APPROVED"},

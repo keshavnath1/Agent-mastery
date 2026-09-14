@@ -38,16 +38,22 @@ class GenericTieoutTests(unittest.TestCase):
             (self.root / "contracts" / name).write_bytes((TEMPLATE_ROOT / "contracts" / name).read_bytes())
         self.fixture_dir = self.root / "tests" / "fixtures" / "DEMO"
         self.fixture_dir.mkdir(parents=True)
+        self.intake_manifest_path = self.root / "artifacts" / "evidence" / "intake_manifest.json"
+        self.intake_manifest_path.parent.mkdir(parents=True)
+        self.intake_manifest_path.write_text(json.dumps({"file_count": 2, "files": []}, indent=2) + "\n", encoding="utf-8")
         self.input_path = self.fixture_dir / "input.csv"
         self.oracle_path = self.fixture_dir / "oracle.csv"
         self.input_path.write_text("id,input_score\nA,1.0\nB,2.0\n", encoding="utf-8")
         self.oracle_path.write_text("id,sas_score\nA,1.0\nB,2.0\n", encoding="utf-8")
+        self.selector_path = self.root / "selector.py"
+        self.selector_path.write_text("# deterministic synthetic fixture selector\n", encoding="utf-8")
         self.producer_path = self.root / "producer.py"
         self.producer_path.write_text(
             """from __future__ import annotations
 import argparse
 import csv
 from pathlib import Path
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--input', required=True)
@@ -55,7 +61,13 @@ parser.add_argument('--out', required=True)
 parser.add_argument('--delta', type=float, default=0.0)
 parser.add_argument('--duplicate', action='store_true')
 parser.add_argument('--drop-last', action='store_true')
+parser.add_argument('--fail', action='store_true')
+parser.add_argument('--sleep', type=float, default=0.0)
 args = parser.parse_args()
+if args.fail:
+    raise SystemExit(7)
+if args.sleep:
+    time.sleep(args.sleep)
 with Path(args.input).open(newline='', encoding='utf-8') as handle:
     rows = list(csv.DictReader(handle))
 if args.drop_last:
@@ -76,13 +88,23 @@ with out.open('w', newline='', encoding='utf-8') as handle:
         manifest = {
             "module_id": "DEMO",
             "fixture_kind": "SYNTHETIC_FRAMEWORK_TEST",
+            "selection_version": "test-1",
             "selection_policy": "Two deterministic rows created only to test the reusable comparator.",
+            "selector": {"path": "selector.py", "sha256": sha256(self.selector_path), "command": ["{python}", "selector.py"]},
             "record_count": 2,
             "key_columns": ["id"],
             "sources": [
                 {"path": "tests/fixtures/DEMO/input.csv", "sha256": sha256(self.input_path), "role": "input"},
                 {"path": "tests/fixtures/DEMO/oracle.csv", "sha256": sha256(self.oracle_path), "role": "sas_reference"},
             ],
+            "source_observations": [{"name": "eligible_rows", "value": 2, "evidence": "tests/fixtures/DEMO/input.csv"}],
+            "transformations": [],
+            "coverage_assertions": [
+                {"name": "record_count", "mandatory": True, "status": "PASS", "required": 2, "observed": 2},
+                {"name": "unique_keys", "mandatory": True, "status": "PASS", "required": 2, "observed": 2},
+            ],
+            "selection_reason_counts": {"deterministic_synthetic_rows": 2},
+            "selected_key_hashes_sha256": runner.selected_keys_digest([("A",), ("B",)]),
             "fixture_inputs": [
                 {"path": "tests/fixtures/DEMO/input.csv", "sha256": sha256(self.input_path)}
             ],
@@ -109,7 +131,13 @@ with out.open('w', newline='', encoding='utf-8') as handle:
                 "does_not_prove": ["Any real SAS migration behavior."],
             },
             "key_columns": ["id"],
-            "oracle": {"path": "tests/fixtures/DEMO/oracle.csv", "sha256": sha256(self.oracle_path)},
+            "intake_manifest": {"path": "artifacts/evidence/intake_manifest.json", "sha256": sha256(self.intake_manifest_path)},
+            "oracle": {
+                "path": "tests/fixtures/DEMO/oracle.csv",
+                "sha256": sha256(self.oracle_path),
+                "format": "csv",
+                "representation_note": "Synthetic decimal values are exact for framework testing.",
+            },
             "fixture_manifest": {
                 "path": "tests/fixtures/DEMO/fixture_manifest.json",
                 "sha256": sha256(self.manifest_path),
@@ -126,7 +154,7 @@ with out.open('w', newline='', encoding='utf-8') as handle:
                     "0.0",
                 ],
                 "cwd": ".",
-                "actual_output_path": "artifacts/generated/{run_id}/actual.csv",
+                "actual_output_path": "artifacts/generated/{run_id}/{attempt_id}/actual.csv",
                 "timeout_seconds": 30,
             },
             "comparisons": [
@@ -140,9 +168,14 @@ with out.open('w', newline='', encoding='utf-8') as handle:
                     "null_equal": False,
                 }
             ],
+            "decision_basis": {
+                "source": "synthetic framework test",
+                "rationale": "Exercise deterministic keyed comparison without asserting real migration behavior.",
+            },
             "output": {
-                "result_path": "artifacts/evidence/runs/{run_id}/tieout_result.json",
-                "evidence_path": "artifacts/evidence/runs/{run_id}/evidence.json",
+                "result_path": "artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/tieout_result.json",
+                "summary_path": "artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/tieout_summary.md",
+                "evidence_path": "artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/evidence.json",
             },
             "privacy": {"hash_keys_in_evidence": True, "include_values_in_evidence": False, "max_mismatches": 10},
             "oracle_lock": {
@@ -174,23 +207,29 @@ with out.open('w', newline='', encoding='utf-8') as handle:
     def _write_contract(self) -> None:
         self.contract_path.write_text(yaml.safe_dump(self.contract, sort_keys=False), encoding="utf-8")
 
-    def _result(self, run_id: str) -> dict[str, object]:
-        path = self.root / "artifacts" / "evidence" / "runs" / run_id / "tieout_result.json"
+    def _result(self, run_id: str, attempt_id: str = "attempt-001") -> dict[str, object]:
+        path = self.root / "artifacts" / "evidence" / "runs" / run_id / "attempts" / attempt_id / "tieout_result.json"
         return json.loads(path.read_text(encoding="utf-8"))
 
     def test_pass_writes_schema_valid_evidence(self) -> None:
-        code = runner.execute(self.contract_path, "RUN-PASS")
+        code = runner.execute(self.contract_path, "RUN-PASS", "attempt-001")
         self.assertEqual(code, 0)
         result = self._result("RUN-PASS")
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["row_counts"], {"actual": 2, "expected": 2, "matched": 2})
-        evidence = self.root / "artifacts" / "evidence" / "runs" / "RUN-PASS" / "evidence.json"
+        evidence = self.root / "artifacts" / "evidence" / "runs" / "RUN-PASS" / "attempts" / "attempt-001" / "evidence.json"
+        summary = self.root / "artifacts" / "evidence" / "runs" / "RUN-PASS" / "attempts" / "attempt-001" / "tieout_summary.md"
         self.assertTrue(evidence.is_file())
+        self.assertTrue(summary.is_file())
+        self.assertIn("**PASS**", summary.read_text(encoding="utf-8"))
+        evidence_document = json.loads(evidence.read_text(encoding="utf-8"))
+        self.assertEqual(evidence_document["provenance"]["intake_manifest_sha256"], sha256(self.intake_manifest_path))
+        self.assertEqual(evidence_document["summary"]["fixture_coverage"]["failed"], 0)
 
     def test_numeric_mismatch_fails_and_hashes_keys(self) -> None:
         self.contract["producer"]["command"][-1] = "0.1"
         self._write_contract()
-        code = runner.execute(self.contract_path, "RUN-FAIL")
+        code = runner.execute(self.contract_path, "RUN-FAIL", "attempt-001")
         self.assertEqual(code, 2)
         result = self._result("RUN-FAIL")
         self.assertEqual(result["status"], "FAIL")
@@ -203,14 +242,14 @@ with out.open('w', newline='', encoding='utf-8') as handle:
     def test_duplicate_and_missing_keys_fail(self) -> None:
         self.contract["producer"]["command"].append("--duplicate")
         self._write_contract()
-        self.assertEqual(runner.execute(self.contract_path, "RUN-DUP"), 2)
+        self.assertEqual(runner.execute(self.contract_path, "RUN-DUP", "attempt-001"), 2)
         duplicate_result = self._result("RUN-DUP")
         self.assertEqual(duplicate_result["key_result"]["duplicate_actual_count"], 1)
 
         self.contract["producer"]["command"].pop()
         self.contract["producer"]["command"].append("--drop-last")
         self._write_contract()
-        self.assertEqual(runner.execute(self.contract_path, "RUN-MISSING"), 2)
+        self.assertEqual(runner.execute(self.contract_path, "RUN-MISSING", "attempt-001"), 2)
         missing_result = self._result("RUN-MISSING")
         self.assertEqual(missing_result["key_result"]["missing_count"], 1)
 
@@ -222,12 +261,83 @@ with out.open('w', newline='', encoding='utf-8') as handle:
         self.contract["oracle_lock"]["approval_scope"] = None
         self._write_contract()
         with self.assertRaisesRegex(runner.TieoutError, "human-approved"):
-            runner.execute(self.contract_path, "RUN-BLOCKED")
+            runner.execute(self.contract_path, "RUN-BLOCKED", "attempt-001")
 
     def test_stale_oracle_hash_is_blocked(self) -> None:
         self.oracle_path.write_text("id,sas_score\nA,9.0\nB,9.0\n", encoding="utf-8")
         with self.assertRaisesRegex(runner.TieoutError, "hash mismatch"):
-            runner.execute(self.contract_path, "RUN-STALE")
+            runner.execute(self.contract_path, "RUN-STALE", "attempt-001")
+
+    def test_stale_intake_hash_is_blocked(self) -> None:
+        self.contract["intake_manifest"]["sha256"] = "0" * 64
+        self._write_contract()
+        with self.assertRaisesRegex(runner.TieoutError, "Intake manifest hash mismatch"):
+            runner.execute(self.contract_path, "RUN-INTAKE-STALE", "attempt-001")
+
+    def test_failed_coverage_is_blocked(self) -> None:
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        manifest["coverage_assertions"][0]["status"] = "FAIL"
+        self.manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        self.contract["fixture_manifest"]["sha256"] = sha256(self.manifest_path)
+        self._write_contract()
+        with self.assertRaisesRegex(runner.TieoutError, "Mandatory fixture coverage assertions failed"):
+            runner.execute(self.contract_path, "RUN-COVERAGE-FAIL", "attempt-001")
+
+    def test_stale_selector_and_input_hashes_are_blocked(self) -> None:
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        manifest["selector"]["sha256"] = "0" * 64
+        self.manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        self.contract["fixture_manifest"]["sha256"] = sha256(self.manifest_path)
+        self._write_contract()
+        with self.assertRaisesRegex(runner.TieoutError, "Fixture selector hash mismatch"):
+            runner.execute(self.contract_path, "RUN-SELECTOR-STALE", "attempt-001")
+
+        manifest["selector"]["sha256"] = sha256(self.selector_path)
+        manifest["fixture_inputs"][0]["sha256"] = "0" * 64
+        self.manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        self.contract["fixture_manifest"]["sha256"] = sha256(self.manifest_path)
+        self._write_contract()
+        with self.assertRaisesRegex(runner.TieoutError, "Fixture input 0 hash mismatch"):
+            runner.execute(self.contract_path, "RUN-INPUT-STALE", "attempt-001")
+
+    def test_selection_digest_mismatch_is_blocked(self) -> None:
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        manifest["selected_key_hashes_sha256"] = "0" * 64
+        self.manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        self.contract["fixture_manifest"]["sha256"] = sha256(self.manifest_path)
+        self._write_contract()
+        with self.assertRaisesRegex(runner.TieoutError, "Oracle key selection digest"):
+            runner.execute(self.contract_path, "RUN-DIGEST-FAIL", "attempt-001")
+
+    def test_producer_failure_and_timeout_are_blocked_with_evidence(self) -> None:
+        self.contract["producer"]["command"].append("--fail")
+        self._write_contract()
+        self.assertEqual(runner.execute(self.contract_path, "RUN-PRODUCER-FAIL", "attempt-001"), 3)
+        self.assertEqual(self._result("RUN-PRODUCER-FAIL")["status"], "BLOCKED")
+
+        self.contract["producer"]["command"].pop()
+        self.contract["producer"]["command"].extend(["--sleep", "2"])
+        self.contract["producer"]["timeout_seconds"] = 1
+        self._write_contract()
+        self.assertEqual(runner.execute(self.contract_path, "RUN-PRODUCER-TIMEOUT", "attempt-001"), 3)
+        self.assertEqual(self._result("RUN-PRODUCER-TIMEOUT")["status"], "BLOCKED")
+
+    def test_producer_output_is_deterministic_and_attempts_are_append_only(self) -> None:
+        self.assertEqual(runner.execute(self.contract_path, "RUN-DETERMINISM", "attempt-001"), 0)
+        first = self.root / "artifacts" / "generated" / "RUN-DETERMINISM" / "attempt-001" / "actual.csv"
+        first_result = self.root / "artifacts" / "evidence" / "runs" / "RUN-DETERMINISM" / "attempts" / "attempt-001" / "tieout_result.json"
+        self.assertEqual(runner.execute(self.contract_path, "RUN-DETERMINISM", "attempt-002"), 0)
+        second = self.root / "artifacts" / "generated" / "RUN-DETERMINISM" / "attempt-002" / "actual.csv"
+        second_result = self.root / "artifacts" / "evidence" / "runs" / "RUN-DETERMINISM" / "attempts" / "attempt-002" / "tieout_result.json"
+        self.assertEqual(sha256(first), sha256(second))
+        self.assertTrue(first_result.is_file())
+        self.assertTrue(second_result.is_file())
+        self.assertEqual(json.loads(first_result.read_text(encoding="utf-8"))["attempt_id"], "attempt-001")
+        self.assertEqual(json.loads(second_result.read_text(encoding="utf-8"))["attempt_id"], "attempt-002")
+
+    def test_invalid_attempt_id_is_blocked(self) -> None:
+        with self.assertRaisesRegex(runner.TieoutError, "attempt_id"):
+            runner.execute(self.contract_path, "RUN-INVALID-ATTEMPT", "../overwrite")
 
 
 if __name__ == "__main__":

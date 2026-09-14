@@ -10,35 +10,115 @@
     "provenance"
   ],
   "properties": {
-    "module_id": {
-      "type": "string"
-    },
-    "gate": {
-      "type": "string"
-    },
-    "status": {
-      "enum": [
-        "PASS",
-        "FAIL",
-        "BLOCKED",
-        "CANDIDATE"
-      ]
-    },
+    "module_id": {"type": "string", "minLength": 1},
+    "gate": {"type": "string", "minLength": 1},
+    "status": {"enum": ["PASS", "FAIL", "BLOCKED", "CANDIDATE"]},
     "artifacts": {
       "type": "array",
-      "items": {
-        "type": "object"
-      }
+      "items": {"type": "object"}
     },
-    "provenance": {
-      "type": "object"
-    },
+    "provenance": {"type": "object"},
+    "summary": {"type": "object"},
     "limitations": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "items": {"type": "string", "minLength": 1}
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"gate": {"const": "local_parity_tieout"}},
+        "required": ["gate"]
+      },
+      "then": {
+        "required": ["summary", "limitations"],
+        "properties": {
+          "status": {"enum": ["PASS", "FAIL", "BLOCKED"]},
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+              },
+              "additionalProperties": true
+            }
+          },
+          "provenance": {
+            "type": "object",
+            "required": [
+              "run_id",
+              "attempt_id",
+              "git_commit",
+              "python_version",
+              "platform",
+              "runner_path",
+              "runner_sha256",
+              "contract_path",
+              "contract_sha256",
+              "intake_manifest_path",
+              "intake_manifest_sha256",
+              "oracle_path",
+              "oracle_sha256",
+              "oracle_format",
+              "oracle_representation_note",
+              "fixture_manifest_path",
+              "fixture_manifest_sha256",
+              "actual_output_path",
+              "actual_output_sha256",
+              "producer_command",
+              "producer_return_code",
+              "decision_basis"
+            ],
+            "properties": {
+              "run_id": {"type": "string", "minLength": 1},
+              "attempt_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+              "git_commit": {"type": "string", "minLength": 1},
+              "python_version": {"type": "string", "minLength": 1},
+              "platform": {"type": "string", "minLength": 1},
+              "runner_path": {"type": "string", "minLength": 1},
+              "runner_sha256": {"type": "string", "minLength": 1},
+              "contract_path": {"type": "string", "minLength": 1},
+              "contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "intake_manifest_path": {"type": "string", "minLength": 1},
+              "intake_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "oracle_path": {"type": "string", "minLength": 1},
+              "oracle_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "oracle_format": {"type": "string", "minLength": 1},
+              "oracle_representation_note": {"type": "string", "minLength": 1},
+              "fixture_manifest_path": {"type": "string", "minLength": 1},
+              "fixture_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "actual_output_path": {"type": ["string", "null"]},
+              "actual_output_sha256": {"type": ["string", "null"]},
+              "producer_command": {"type": "array", "items": {"type": "string"}},
+              "producer_return_code": {"type": "integer"},
+              "decision_basis": {
+                "type": "object",
+                "required": ["source", "rationale"],
+                "properties": {
+                  "source": {"type": "string", "minLength": 1},
+                  "rationale": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "additionalProperties": true
+          },
+          "summary": {
+            "type": "object",
+            "required": ["row_counts", "key_result", "comparisons", "fixture_coverage", "decision_basis"],
+            "properties": {
+              "row_counts": {"type": "object"},
+              "key_result": {"type": "object"},
+              "comparisons": {"type": "array"},
+              "fixture_coverage": {"type": "object"},
+              "decision_basis": {"type": "object"}
+            }
+          }
+        }
+      }
+    }
+  ],
   "additionalProperties": true
 }

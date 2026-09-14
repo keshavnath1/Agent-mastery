@@ -5,10 +5,12 @@
   "required": [
     "module_id",
     "run_id",
+    "attempt_id",
     "gate",
     "status",
     "contract",
     "producer",
+    "fixture_coverage",
     "row_counts",
     "key_result",
     "comparisons",
@@ -18,6 +20,7 @@
   "properties": {
     "module_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
     "gate": {"const": "local_parity_tieout"},
     "status": {"enum": ["PASS", "FAIL", "BLOCKED"]},
     "contract": {
@@ -39,6 +42,16 @@
         "return_code": {"type": "integer"},
         "stdout": {"type": "string"},
         "stderr": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "fixture_coverage": {
+      "type": "object",
+      "required": ["mandatory_assertions", "passed", "failed"],
+      "properties": {
+        "mandatory_assertions": {"type": "integer", "minimum": 0},
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0}
       },
       "additionalProperties": false
     },

@@ -8,6 +8,8 @@ import csv
 import hashlib
 import json
 import math
+import platform
+import re
 import subprocess
 import sys
 from collections.abc import Mapping, Sequence
@@ -35,6 +37,18 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def git_commit() -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        shell=False,
+    )
+    return completed.stdout.strip() if completed.returncode == 0 else "UNAVAILABLE"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -102,6 +116,11 @@ def key_hash(key: Sequence[str]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def selected_keys_digest(keys: Sequence[Sequence[str]]) -> str:
+    hashes = sorted(key_hash(key) for key in keys)
+    return hashlib.sha256(("\n".join(hashes) + "\n").encode("utf-8")).hexdigest()
+
+
 def index_rows(
     rows: Sequence[Mapping[str, str]],
     keys: Sequence[str],
@@ -163,13 +182,13 @@ def compare_value(expected: str, actual: str, rule: Mapping[str, Any]) -> tuple[
     return delta <= tolerance, delta, "tolerance_exceeded" if delta > tolerance else "match"
 
 
-def output_path(pattern: str, run_id: str, label: str) -> Path:
-    path = resolve_repo_path(pattern.replace("{run_id}", run_id), label)
-    required_parent = (ROOT / "artifacts" / "evidence" / "runs" / run_id).resolve()
+def output_path(pattern: str, run_id: str, attempt_id: str, label: str) -> Path:
+    path = resolve_repo_path(substitute(pattern, {"run_id": run_id, "attempt_id": attempt_id}), label)
+    required_parent = (ROOT / "artifacts" / "evidence" / "runs" / run_id / "attempts" / attempt_id).resolve()
     try:
         path.relative_to(required_parent)
     except ValueError as exc:
-        raise TieoutError(f"{label} must be under artifacts/evidence/runs/{run_id}/") from exc
+        raise TieoutError(f"{label} must be under artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/") from exc
     return path
 
 
@@ -183,12 +202,15 @@ def blocked_result(
     contract_path: Path,
     contract_hash: str,
     run_id: str,
+    attempt_id: str,
     producer: Mapping[str, Any],
     reason: str,
+    fixture_coverage: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     return {
         "module_id": str(contract["module_id"]),
         "run_id": run_id,
+        "attempt_id": attempt_id,
         "gate": "local_parity_tieout",
         "status": "BLOCKED",
         "contract": {
@@ -197,6 +219,7 @@ def blocked_result(
             "version": str(contract["contract_version"]),
         },
         "producer": producer,
+        "fixture_coverage": dict(fixture_coverage or {"mandatory_assertions": 0, "passed": 0, "failed": 0}),
         "row_counts": {"expected": 0, "actual": 0, "matched": 0},
         "key_result": {
             "missing_count": 0,
@@ -220,11 +243,50 @@ def blocked_result(
     }
 
 
+def render_summary(result: Mapping[str, Any], contract: Mapping[str, Any]) -> str:
+    lines = [
+        f"# {result['module_id']} Local Parity Result",
+        "",
+        f"> **{result['status']}** — governed SAS-to-Python keyed tie-out for run `{result['run_id']}`.",
+        "",
+        "## Scoreboard",
+        "",
+        "| Measure | Result |",
+        "|---|---:|",
+        f"| Expected rows | {result['row_counts']['expected']} |",
+        f"| Actual rows | {result['row_counts']['actual']} |",
+        f"| Matched keys | {result['row_counts']['matched']} |",
+        f"| Missing keys | {result['key_result']['missing_count']} |",
+        f"| Extra keys | {result['key_result']['extra_count']} |",
+        f"| Duplicate expected keys | {result['key_result']['duplicate_expected_count']} |",
+        f"| Duplicate actual keys | {result['key_result']['duplicate_actual_count']} |",
+        f"| Mandatory fixture assertions passed | {result['fixture_coverage']['passed']} / {result['fixture_coverage']['mandatory_assertions']} |",
+        "",
+        "## Configured comparisons",
+        "",
+        "| Comparison | Mode | Tolerance | Compared | Failures | Maximum delta |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for comparison in result["comparisons"]:
+        tolerance = "n/a" if comparison["tolerance"] is None else str(comparison["tolerance"])
+        maximum = "n/a" if comparison["max_delta"] is None else str(comparison["max_delta"])
+        lines.append(
+            f"| {comparison['name']} | {comparison['mode']} | {tolerance} | {comparison['compared']} | {comparison['failures']} | {maximum} |"
+        )
+    lines.extend(["", "## Decision basis", "", f"- **Source:** {contract['decision_basis']['source']}", f"- **Rationale:** {contract['decision_basis']['rationale']}", "", "## Proof boundary", ""])
+    lines.extend(f"- {item}" for item in result["limitations"])
+    return "\n".join(lines) + "\n"
+
+
 def build_evidence(
     result: Mapping[str, Any],
+    contract: Mapping[str, Any],
     result_path: Path,
+    summary_path: Path,
     contract_path: Path,
     contract_hash: str,
+    intake_path: Path,
+    intake_hash: str,
     oracle_path: Path,
     oracle_hash: str,
     fixture_path: Path,
@@ -233,6 +295,8 @@ def build_evidence(
 ) -> dict[str, Any]:
     artifacts: list[dict[str, Any]] = [
         {"type": "tieout_result", "path": result_path.relative_to(ROOT).as_posix(), "sha256": sha256_file(result_path)},
+        {"type": "tieout_summary", "path": summary_path.relative_to(ROOT).as_posix(), "sha256": sha256_file(summary_path)},
+        {"type": "intake_manifest", "path": intake_path.relative_to(ROOT).as_posix(), "sha256": intake_hash},
         {"type": "oracle", "path": oracle_path.relative_to(ROOT).as_posix(), "sha256": oracle_hash},
         {"type": "fixture_manifest", "path": fixture_path.relative_to(ROOT).as_posix(), "sha256": fixture_hash},
     ]
@@ -240,6 +304,7 @@ def build_evidence(
         artifacts.append(
             {"type": "actual_output", "path": actual_path.relative_to(ROOT).as_posix(), "sha256": sha256_file(actual_path)}
         )
+    runner_path = ROOT / "scripts" / "run_tieout.py"
     return {
         "module_id": result["module_id"],
         "gate": "local_parity_tieout",
@@ -247,17 +312,43 @@ def build_evidence(
         "artifacts": artifacts,
         "provenance": {
             "run_id": result["run_id"],
+            "attempt_id": result["attempt_id"],
+            "git_commit": git_commit(),
+            "python_version": platform.python_version(),
+            "platform": platform.platform(),
+            "runner_path": "scripts/run_tieout.py",
+            "runner_sha256": sha256_file(runner_path) if runner_path.is_file() else "UNAVAILABLE",
             "contract_path": contract_path.relative_to(ROOT).as_posix(),
             "contract_sha256": contract_hash,
+            "intake_manifest_path": intake_path.relative_to(ROOT).as_posix(),
+            "intake_manifest_sha256": intake_hash,
+            "fixture_manifest_path": fixture_path.relative_to(ROOT).as_posix(),
+            "fixture_manifest_sha256": fixture_hash,
+            "oracle_path": oracle_path.relative_to(ROOT).as_posix(),
+            "oracle_sha256": oracle_hash,
+            "oracle_format": contract["oracle"]["format"],
+            "oracle_representation_note": contract["oracle"]["representation_note"],
+            "actual_output_path": actual_path.relative_to(ROOT).as_posix() if actual_path is not None and actual_path.is_file() else None,
+            "actual_output_sha256": sha256_file(actual_path) if actual_path is not None and actual_path.is_file() else None,
+            "decision_basis": contract["decision_basis"],
             "producer_command": result["producer"]["command"],
             "producer_cwd": result["producer"]["cwd"],
             "producer_return_code": result["producer"]["return_code"],
+        },
+        "summary": {
+            "row_counts": result["row_counts"],
+            "key_result": result["key_result"],
+            "fixture_coverage": result["fixture_coverage"],
+            "comparisons": result["comparisons"],
+            "decision_basis": contract["decision_basis"],
         },
         "limitations": result["limitations"],
     }
 
 
-def execute(contract_path: Path, run_id: str) -> int:
+def execute(contract_path: Path, run_id: str, attempt_id: str) -> int:
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", attempt_id):
+        raise TieoutError("attempt_id must contain only letters, digits, dot, underscore, or hyphen")
     contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
     if not isinstance(contract, dict):
         raise TieoutError("Tie-out contract must be a YAML mapping")
@@ -266,18 +357,23 @@ def execute(contract_path: Path, run_id: str) -> int:
         raise TieoutError("Tie-out contract and oracle lock must be human-approved before execution")
 
     contract_hash = sha256_file(contract_path)
+    intake_path = resolve_repo_path(str(contract["intake_manifest"]["path"]), "intake_manifest.path")
     oracle_path = resolve_repo_path(str(contract["oracle"]["path"]), "oracle.path")
     fixture_path = resolve_repo_path(str(contract["fixture_manifest"]["path"]), "fixture_manifest.path")
     actual_pattern = str(contract["producer"]["actual_output_path"])
-    actual_path = resolve_repo_path(actual_pattern.replace("{run_id}", run_id), "producer.actual_output_path")
-    required_actual_parent = (ROOT / "artifacts" / "generated" / run_id).resolve()
+    actual_path = resolve_repo_path(substitute(actual_pattern, {"run_id": run_id, "attempt_id": attempt_id}), "producer.actual_output_path")
+    required_actual_parent = (ROOT / "artifacts" / "generated" / run_id / attempt_id).resolve()
     try:
         actual_path.relative_to(required_actual_parent)
     except ValueError as exc:
-        raise TieoutError(f"producer.actual_output_path must be under artifacts/generated/{run_id}/") from exc
+        raise TieoutError(f"producer.actual_output_path must be under artifacts/generated/{run_id}/{attempt_id}/") from exc
 
+    require_file(intake_path, "intake manifest")
     require_file(oracle_path, "oracle")
     require_file(fixture_path, "fixture manifest")
+    intake_hash = verify_hash(intake_path, str(contract["intake_manifest"]["sha256"]), "Intake manifest")
+    if str(contract["oracle"]["format"]).lower() != "csv":
+        raise TieoutError("The generic tie-out runner currently requires oracle.format: csv")
     oracle_hash = verify_hash(oracle_path, str(contract["oracle"]["sha256"]), "Oracle")
     fixture_hash = verify_hash(fixture_path, str(contract["fixture_manifest"]["sha256"]), "Fixture manifest")
     fixture_document = load_json(fixture_path)
@@ -291,6 +387,29 @@ def execute(contract_path: Path, run_id: str) -> int:
     if fixture_document["oracle"]["path"] != contract["oracle"]["path"] or fixture_document["oracle"]["sha256"] != oracle_hash:
         raise TieoutError("Fixture manifest oracle lock does not match the tie-out contract")
 
+    selector_path = resolve_repo_path(str(fixture_document["selector"]["path"]), "fixture.selector.path")
+    require_file(selector_path, "fixture selector")
+    verify_hash(selector_path, str(fixture_document["selector"]["sha256"]), "Fixture selector")
+    for index, item in enumerate(fixture_document["sources"]):
+        source_path = resolve_repo_path(str(item["path"]), f"fixture.sources[{index}].path")
+        require_file(source_path, f"fixture source {index}")
+        verify_hash(source_path, str(item["sha256"]), f"Fixture source {index}")
+    for index, item in enumerate(fixture_document["fixture_inputs"]):
+        input_path = resolve_repo_path(str(item["path"]), f"fixture.fixture_inputs[{index}].path")
+        require_file(input_path, f"fixture input {index}")
+        verify_hash(input_path, str(item["sha256"]), f"Fixture input {index}")
+
+    mandatory_assertions = [item for item in fixture_document["coverage_assertions"] if item["mandatory"]]
+    failed_assertions = [item for item in mandatory_assertions if item["status"] != "PASS"]
+    fixture_coverage = {
+        "mandatory_assertions": len(mandatory_assertions),
+        "passed": len(mandatory_assertions) - len(failed_assertions),
+        "failed": len(failed_assertions),
+    }
+    if failed_assertions:
+        names = [str(item["name"]) for item in failed_assertions]
+        raise TieoutError(f"Mandatory fixture coverage assertions failed: {names}")
+
     cwd = resolve_repo_path(str(contract["producer"]["cwd"]), "producer.cwd")
     if not cwd.is_dir():
         raise TieoutError(f"Producer working directory does not exist: {cwd.relative_to(ROOT)}")
@@ -302,8 +421,10 @@ def execute(contract_path: Path, run_id: str) -> int:
         "python": sys.executable,
         "root": str(ROOT),
         "run_id": run_id,
+        "attempt_id": attempt_id,
         "actual_output_path": str(actual_path),
         "fixture_manifest_path": str(fixture_path),
+        "intake_manifest_path": str(intake_path),
     }
     command = [substitute(str(item), tokens) for item in contract["producer"]["command"]]
     producer_record: dict[str, Any] = {
@@ -313,8 +434,9 @@ def execute(contract_path: Path, run_id: str) -> int:
         "stdout": "",
         "stderr": "",
     }
-    result_path = output_path(str(contract["output"]["result_path"]), run_id, "output.result_path")
-    evidence_path = output_path(str(contract["output"]["evidence_path"]), run_id, "output.evidence_path")
+    result_path = output_path(str(contract["output"]["result_path"]), run_id, attempt_id, "output.result_path")
+    summary_path = output_path(str(contract["output"]["summary_path"]), run_id, attempt_id, "output.summary_path")
+    evidence_path = output_path(str(contract["output"]["evidence_path"]), run_id, attempt_id, "output.evidence_path")
 
     try:
         completed = subprocess.run(
@@ -337,10 +459,11 @@ def execute(contract_path: Path, run_id: str) -> int:
             stdout=(exc.stdout or "")[-20000:] if isinstance(exc.stdout, str) else "",
             stderr=(exc.stderr or "")[-20000:] if isinstance(exc.stderr, str) else "",
         )
-        result = blocked_result(contract, contract_path, contract_hash, run_id, producer_record, "Producer timed out")
+        result = blocked_result(contract, contract_path, contract_hash, run_id, attempt_id, producer_record, "Producer timed out", fixture_coverage)
         validate_document(result, RESULT_SCHEMA, "Tie-out result")
         write_json(result_path, result)
-        evidence = build_evidence(result, result_path, contract_path, contract_hash, oracle_path, oracle_hash, fixture_path, fixture_hash, None)
+        summary_path.write_text(render_summary(result, contract), encoding="utf-8")
+        evidence = build_evidence(result, contract, result_path, summary_path, contract_path, contract_hash, intake_path, intake_hash, oracle_path, oracle_hash, fixture_path, fixture_hash, None)
         validate_document(evidence, EVIDENCE_SCHEMA, "Evidence bundle")
         write_json(evidence_path, evidence)
         print(f"Tie-out status: BLOCKED\nEvidence: {evidence_path.relative_to(ROOT)}")
@@ -348,10 +471,11 @@ def execute(contract_path: Path, run_id: str) -> int:
 
     if producer_record["return_code"] != 0 or not actual_path.is_file() or actual_path.stat().st_size == 0:
         reason = "Producer failed" if producer_record["return_code"] != 0 else "Producer did not create a non-empty actual-output CSV"
-        result = blocked_result(contract, contract_path, contract_hash, run_id, producer_record, reason)
+        result = blocked_result(contract, contract_path, contract_hash, run_id, attempt_id, producer_record, reason, fixture_coverage)
         validate_document(result, RESULT_SCHEMA, "Tie-out result")
         write_json(result_path, result)
-        evidence = build_evidence(result, result_path, contract_path, contract_hash, oracle_path, oracle_hash, fixture_path, fixture_hash, actual_path)
+        summary_path.write_text(render_summary(result, contract), encoding="utf-8")
+        evidence = build_evidence(result, contract, result_path, summary_path, contract_path, contract_hash, intake_path, intake_hash, oracle_path, oracle_hash, fixture_path, fixture_hash, actual_path)
         validate_document(evidence, EVIDENCE_SCHEMA, "Evidence bundle")
         write_json(evidence_path, evidence)
         print(f"Tie-out status: BLOCKED\nEvidence: {evidence_path.relative_to(ROOT)}")
@@ -371,6 +495,9 @@ def execute(contract_path: Path, run_id: str) -> int:
 
     expected_by_key, duplicate_expected = index_rows(expected_rows, keys)
     actual_by_key, duplicate_actual = index_rows(actual_rows, keys)
+    expected_selection_digest = selected_keys_digest(list(expected_by_key))
+    if expected_selection_digest != fixture_document["selected_key_hashes_sha256"]:
+        raise TieoutError("Oracle key selection digest does not match the governed fixture manifest")
     missing_keys = sorted(set(expected_by_key) - set(actual_by_key))
     extra_keys = sorted(set(actual_by_key) - set(expected_by_key))
     matched_keys = sorted(set(expected_by_key) & set(actual_by_key))
@@ -438,6 +565,7 @@ def execute(contract_path: Path, run_id: str) -> int:
     result = {
         "module_id": str(contract["module_id"]),
         "run_id": run_id,
+        "attempt_id": attempt_id,
         "gate": "local_parity_tieout",
         "status": "FAIL" if failed else "PASS",
         "contract": {
@@ -446,6 +574,7 @@ def execute(contract_path: Path, run_id: str) -> int:
             "version": str(contract["contract_version"]),
         },
         "producer": producer_record,
+        "fixture_coverage": fixture_coverage,
         "row_counts": {"expected": len(expected_rows), "actual": len(actual_rows), "matched": len(matched_keys)},
         "key_result": {
             "missing_count": len(missing_keys),
@@ -459,7 +588,8 @@ def execute(contract_path: Path, run_id: str) -> int:
     }
     validate_document(result, RESULT_SCHEMA, "Tie-out result")
     write_json(result_path, result)
-    evidence = build_evidence(result, result_path, contract_path, contract_hash, oracle_path, oracle_hash, fixture_path, fixture_hash, actual_path)
+    summary_path.write_text(render_summary(result, contract), encoding="utf-8")
+    evidence = build_evidence(result, contract, result_path, summary_path, contract_path, contract_hash, intake_path, intake_hash, oracle_path, oracle_hash, fixture_path, fixture_hash, actual_path)
     validate_document(evidence, EVIDENCE_SCHEMA, "Evidence bundle")
     write_json(evidence_path, evidence)
 
@@ -473,12 +603,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Execute an approved generic SAS-to-Python tie-out contract")
     parser.add_argument("--contract", default="config/tieout.yaml", help="Repository-relative contract path")
     parser.add_argument("--run-id", required=True, help="Existing durable run identifier")
+    parser.add_argument("--attempt-id", required=True, help="Append-only validation attempt identifier, for example attempt-001")
     args = parser.parse_args()
 
     try:
         contract_path = resolve_repo_path(args.contract, "contract")
         require_file(contract_path, "tie-out contract")
-        return execute(contract_path, args.run_id)
+        return execute(contract_path, args.run_id, args.attempt_id)
     except TieoutError as exc:
         print(f"Tie-out status: BLOCKED\nReason: {exc}", file=sys.stderr)
         return 3

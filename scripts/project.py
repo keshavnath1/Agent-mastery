@@ -77,6 +77,7 @@ def main() -> int:
     start_parser.add_argument("--module", required=True, help="Explicit neutral module identifier")
     tieout_parser = sub.add_parser("tieout")
     tieout_parser.add_argument("--run-id", required=True, help="Existing durable run identifier")
+    tieout_parser.add_argument("--attempt-id", required=True, help="Append-only validation attempt identifier")
     tieout_parser.add_argument("--contract", default="config/tieout.yaml", help="Repository-relative approved contract")
     args = parser.parse_args()
 
@@ -91,7 +92,7 @@ def main() -> int:
     if args.command == "start":
         return start(args.module)
     if args.command == "tieout":
-        return run("run_tieout.py", "--contract", args.contract, "--run-id", args.run_id)
+        return run("run_tieout.py", "--contract", args.contract, "--run-id", args.run_id, "--attempt-id", args.attempt_id)
     return 2
 
 

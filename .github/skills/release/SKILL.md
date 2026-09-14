@@ -15,15 +15,16 @@ The active module, current stage, source commit, mutable paths, protected paths,
 
 ## Required inputs
 
-Approved SPEC/ADRs, reviewed evidence, rollback plan, limitations, and target environment.
+Approved SPEC/ADRs, independently reviewed tie-out contract/result/summary/evidence, governed fixture coverage, rollback plan, limitations, and target environment.
 
 ## Workflow
 
-1. Verify every required gate.
-2. Confirm artifact and commit provenance.
-3. Summarize residual risk and rollback.
-4. Prepare the decision record.
-5. Obtain explicit human approval before merge or deployment.
+1. Verify every required gate and the independent review decision.
+2. Confirm commit plus intake, fixture, oracle, contract, runner, result, summary, and evidence provenance.
+3. Derive the parity scoreboard from reviewed machine-readable evidence: fixture coverage, row/key counts, comparison tolerances, failure counts, and maximum deltas. Never type replacement numbers by hand.
+4. Carry the evidence limitations and `does_not_prove` boundary into the release packet verbatim; distinguish local parity from selected-runtime, cluster, performance, scalability, and production proof.
+5. Summarize residual risk, rollback target, and the exact release scope.
+6. Prepare the decision record as `CANDIDATE` and obtain explicit human approval before merge or deployment.
 
 ## Output artifact
 
@@ -31,7 +32,7 @@ Release decision record and approved merge/deployment instruction.
 
 ## Verification
 
-No required gate is missing and approval identity/time are recorded.
+No required gate is missing; the release scoreboard reconciles to reviewed evidence; limitations are unchanged; rollback is actionable; and approval identity/time are recorded.
 
 ## Boundaries and red flags
 

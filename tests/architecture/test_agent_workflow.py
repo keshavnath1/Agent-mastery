@@ -43,7 +43,10 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertIsNone(profile["module_id"])
         self.assertEqual(tieout["status"], "UNAPPROVED_TEMPLATE")
         self.assertEqual(tieout["key_columns"], [])
+        self.assertIsNone(tieout["intake_manifest"]["path"])
         self.assertIsNone(tieout["oracle"]["path"])
+        self.assertIsNone(tieout["oracle"]["format"])
+        self.assertIsNone(tieout["decision_basis"]["source"])
         self.assertIsNone(tieout["fixture_manifest"]["path"])
         self.assertEqual(tieout["producer"]["command"], [])
         self.assertEqual(tieout["comparisons"], [])
@@ -92,7 +95,8 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertEqual(artifacts["module_spec"], "docs/specs/<module>.md")
         self.assertEqual(artifacts["semantic_ir"], "artifacts/semantic_ir/<module>.json")
         self.assertEqual(artifacts["implementation"], "src/sas_migration/semantic/")
-        self.assertEqual(artifacts["tieout_result"], "artifacts/evidence/runs/<run-id>/tieout_result.json")
+        self.assertEqual(artifacts["tieout_result"], "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_result.json")
+        self.assertEqual(artifacts["tieout_summary"], "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md")
 
     def test_generic_parity_framework_is_required_but_inert(self) -> None:
         for relative in [
@@ -108,11 +112,20 @@ class AgentWorkflowContractTests(unittest.TestCase):
         generate = (ROOT / ".github/skills/generate/SKILL.md").read_text(encoding="utf-8")
         test = (ROOT / ".github/skills/test/SKILL.md").read_text(encoding="utf-8")
         validate = (ROOT / ".github/skills/validate/SKILL.md").read_text(encoding="utf-8")
+        review = (ROOT / ".github/skills/review/SKILL.md").read_text(encoding="utf-8")
+        release = (ROOT / ".github/skills/release/SKILL.md").read_text(encoding="utf-8")
         runner = (ROOT / "scripts/run_tieout.py").read_text(encoding="utf-8")
         self.assertIn("producer entry point", generate)
         self.assertIn("fixture_manifest.schema.json", test)
+        self.assertIn("coverage assertions", test)
         self.assertIn("scripts/project.py tieout", validate)
+        self.assertIn("--attempt-id", validate)
+        self.assertIn("tieout_summary.md", validate)
+        self.assertIn("reproduced `tieout_result.json`", review)
+        self.assertIn("Derive the parity scoreboard", release)
         self.assertIn("shell=False", runner)
+        self.assertIn("selected_keys_digest", runner)
+        self.assertIn("render_summary", runner)
 
     def test_recovery_loop_is_bounded(self) -> None:
         recovery = self.workflow["recovery_loop"]

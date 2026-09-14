@@ -33,7 +33,7 @@ List behaviors, runtimes, datasets, deployment targets, performance claims, and 
 
 ## Acceptance evidence
 
-Define keys, expected outputs, comparison metrics, tolerances, fixture or population boundary, and the exact claim a passing result supports. Do not borrow values from examples.
+Define keys; authoritative intake and oracle paths, formats, and hashes; deterministic fixture or population selection; mandatory coverage assertions; expected and actual columns; comparison metrics; tolerance decision source and rationale; producer boundary; and the exact claim a passing result supports and does not support. Do not borrow values from examples or infer acceptance thresholds from generated output.
 
 ## Runtime direction
 

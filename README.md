@@ -159,18 +159,18 @@ Copying SAS files and reference CSVs into `intake/` does not immediately run par
 ```text
 interview identifies the oracle and proof goal
     ↓
-specify defines keys, fixture policy, columns, metrics, tolerances, producer, and proof boundary
+specify freezes intake/oracle provenance, keys, coverage policy, metrics, tolerance rationale, producer, and proof boundary
     ↓
 generate creates the Python semantic core and actual-output producer
     ↓
-test creates the governed fixture manifest, locks the SAS oracle hash, and tests the generic comparator
+test creates a deterministic selector, governed fixture manifest and coverage assertions, locks every source/oracle hash, and tests the generic comparator
     ↓
 human approves the exact tie-out contract and hashes
     ↓
-validate runs the generic keyed tie-out and emits PASS / FAIL / BLOCKED evidence
+validate runs the generic keyed tie-out and emits detailed result, human-readable summary, and PASS / FAIL / BLOCKED evidence
 ```
 
-The active `validate` skill invokes `python3 scripts/project.py tieout --run-id <run-id>` internally. Users should continue using Copilot prompts rather than running this helper manually. The runner is module-neutral: it reads only the approved `config/tieout.yaml`, runs the declared producer without a shell, verifies oracle and fixture hashes, detects duplicate/missing/extra keys, applies every configured comparison, and writes schema-valid `tieout_result.json` plus `evidence.json`.
+The active `validate` skill invokes `python3 scripts/project.py tieout --run-id <run-id>` internally. Users should continue using Copilot prompts rather than running this helper manually. The runner is module-neutral: it reads only the approved `config/tieout.yaml`; verifies intake, selector, source, input, fixture, and oracle hashes; requires mandatory coverage assertions and the selected-key digest; runs the declared producer without a shell; detects duplicate/missing/extra keys; applies every configured comparison; suppresses raw mismatch values; and writes schema-valid `tieout_result.json`, generated `tieout_summary.md`, and `evidence.json`.
 
 See [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md). An unapproved or incomplete tie-out contract must return `BLOCKED`; unit tests alone cannot be presented as parity.
 
@@ -181,7 +181,7 @@ See [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md). An unappro
 | `trace` | `stage1_extraction/output/execution_trace.json` |
 | `map` | `policy/policy_registry.yaml` |
 | `model` | `artifacts/semantic_ir/<module>.json` |
-| `validate` | `artifacts/evidence/runs/<run-id>/evidence.json` and `tieout_result.json` when local parity is required |
+| `validate` | Attempt-specific `tieout_result.json`, generated `tieout_summary.md`, and `evidence.json` under `artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/` when local parity is required |
 | `review` | `artifacts/reviews/<run-id>.md` |
 | `release` | `artifacts/releases/<run-id>/release_packet.md` |
 
@@ -207,7 +207,7 @@ The `.gitignore` protects local source intake, incoming runtime evidence, and co
 python scripts/smoke_test.py
 ```
 
-A fresh template checkout should pass structural and architecture validation plus the synthetic generic tie-out PASS/FAIL/BLOCKED cases while containing no active module, no generated implementation, and no real run evidence.
+A fresh template checkout should pass structural and architecture validation plus synthetic generic tie-out cases for PASS, numerical/key failure, failed coverage, stale provenance, selection-digest mismatch, producer failure/timeout, determinism, and unapproved contracts while containing no active module, no generated implementation, and no real run evidence.
 
 ## Next reading
 

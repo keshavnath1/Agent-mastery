@@ -82,8 +82,9 @@ canonical_artifacts:
   policy_registry: policy/policy_registry.yaml
   semantic_ir: artifacts/semantic_ir/<module>.json
   implementation: src/sas_migration/semantic/
-  tieout_result: artifacts/evidence/runs/<run-id>/tieout_result.json
-  evidence: artifacts/evidence/runs/<run-id>/evidence.json
+  tieout_result: artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_result.json
+  tieout_summary: artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md
+  evidence: artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/evidence.json
   release_packet: artifacts/releases/<run-id>/release_packet.md
   learning_record: artifacts/learning/<module>.md
 human_gates:

@@ -15,15 +15,16 @@ The active module, current stage, source commit, mutable paths, protected paths,
 
 ## Required inputs
 
-Commit, stage contract, evidence bundle, protected-artifact manifest, and verification command.
+Commit, stage contract, approved tie-out contract, detailed result, generated summary, evidence bundle, governed fixture manifest, protected-artifact manifest, and verification command.
 
 ## Workflow
 
 1. Inspect the diff and ownership boundary.
-2. Verify protected artifacts did not change.
-3. Re-run the deterministic command.
-4. Assess limitations and unresolved risks.
-5. Record ACCEPT, REJECT, or BLOCKED with evidence.
+2. Verify the recorded commit plus intake, selector/source/input, fixture, oracle, contract, and runner hashes.
+3. Re-run the frozen deterministic command in fresh checker context without repairing anything.
+4. Compare the reproduced `tieout_result.json`, generated summary, and evidence scoreboard with the reviewed artifacts; explain any nondeterministic provenance fields.
+5. Verify mandatory fixture coverage, keyed counts, metric/tolerance summaries, decision rationale, retry history, limitations, and proof boundary.
+6. Record ACCEPT, REJECT, or BLOCKED with the reviewed and reproduced artifact hashes.
 
 ## Output artifact
 
@@ -31,7 +32,7 @@ Commit, stage contract, evidence bundle, protected-artifact manifest, and verifi
 
 ## Verification
 
-Review includes command output, commit, evidence references, and explicit decision.
+Review includes the command and return code, commit, protected hashes, reproduced result/summary/evidence references, parity scoreboard, limitations, retry lineage, and explicit decision.
 
 ## Boundaries and red flags
 

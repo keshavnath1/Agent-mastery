@@ -74,11 +74,15 @@ def main() -> int:
     require(tieout.get("status") == "UNAPPROVED_TEMPLATE", "Tie-out contract must be unapproved", errors)
     require(tieout.get("module_id") is None, "Tie-out contract must not contain a module ID", errors)
     require(tieout.get("key_columns") == [], "Template must not invent tie-out keys", errors)
+    require(tieout.get("intake_manifest", {}).get("path") is None, "Template must not select an intake manifest", errors)
     require(tieout.get("oracle", {}).get("path") is None, "Template must not select a SAS oracle", errors)
+    require(tieout.get("oracle", {}).get("format") is None, "Template must not assume an oracle format", errors)
+    require(tieout.get("decision_basis", {}).get("source") is None, "Template must not invent a tolerance decision source", errors)
     require(tieout.get("fixture_manifest", {}).get("path") is None, "Template must not select a parity fixture", errors)
     require(tieout.get("producer", {}).get("command") == [], "Template must not invent a producer command", errors)
     require(tieout.get("comparisons") == [], "Template must not invent metrics or tolerances", errors)
-    require(tieout.get("output", {}).get("result_path") == "artifacts/evidence/runs/{run_id}/tieout_result.json", "Wrong generic tie-out result path", errors)
+    require(tieout.get("output", {}).get("result_path") == "artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/tieout_result.json", "Wrong generic tie-out result path", errors)
+    require(tieout.get("output", {}).get("summary_path") == "artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/tieout_summary.md", "Wrong generic tie-out summary path", errors)
     require(tieout.get("oracle_lock", {}).get("implementation_may_modify") is False, "Implementation must not modify the tie-out contract", errors)
 
     workflow = yaml.safe_load(text("config/workflow.yaml"))
@@ -89,6 +93,8 @@ def main() -> int:
     require(workflow["canonical_artifacts"]["execution_trace"] == "stage1_extraction/output/execution_trace.json", "Wrong canonical trace path", errors)
     require(workflow["canonical_artifacts"]["policy_registry"] == "policy/policy_registry.yaml", "Wrong canonical policy registry path", errors)
     require(workflow["canonical_artifacts"]["tieout_contract"] == "config/tieout.yaml", "Wrong canonical tie-out path", errors)
+    require(workflow["canonical_artifacts"]["tieout_result"] == "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_result.json", "Wrong canonical tie-out result path", errors)
+    require(workflow["canonical_artifacts"]["tieout_summary"] == "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md", "Wrong canonical tie-out summary path", errors)
     require(workflow["canonical_artifacts"]["module_spec"] == "docs/specs/<module>.md", "Module SPEC path must be runtime-neutral", errors)
     require(workflow["canonical_artifacts"]["implementation"] == "src/sas_migration/semantic/", "Implementation path must be generic", errors)
     require({"next_permitted_command", "next_action", "copy_paste_next"} <= set(workflow["stage_result_fields"]), "Stage Result lacks copy-ready next-action fields", errors)
@@ -114,6 +120,8 @@ def main() -> int:
     generate_skill = text(".github/skills/generate/SKILL.md")
     test_skill = text(".github/skills/test/SKILL.md")
     validate_skill = text(".github/skills/validate/SKILL.md")
+    review_skill = text(".github/skills/review/SKILL.md")
+    release_skill = text(".github/skills/release/SKILL.md")
     restart_skill = text(".github/skills/restart/SKILL.md")
     tieout_runner = text("scripts/run_tieout.py")
 
@@ -129,9 +137,11 @@ def main() -> int:
     require("Recovery handoff" in orchestrate_pressure, "Orchestrate evaluations lack recovery coverage", errors)
     require("config/tieout.yaml" in specify_skill and "tieout_contract.schema.json" in specify_skill, "Specify does not materialize an executable draft tie-out contract", errors)
     require("producer entry point" in generate_skill and "never reads the SAS oracle" in generate_skill, "Generate does not provide an oracle-isolated parity producer", errors)
-    require("fixture_manifest.schema.json" in test_skill and "scripts/run_tieout.py" in test_skill, "Test lacks governed fixture and comparator coverage", errors)
-    require("scripts/project.py tieout" in validate_skill and "tieout_result.json" in validate_skill, "Validate does not require generic parity execution", errors)
-    require("shell=False" in tieout_runner and "hash_keys_in_evidence" in text("config/tieout.yaml"), "Generic tie-out runner lacks safe execution or key privacy", errors)
+    require("fixture_manifest.schema.json" in test_skill and "coverage assertions" in test_skill and "selected-key digest" in test_skill, "Test lacks governed fixture coverage and selection controls", errors)
+    require("scripts/project.py tieout" in validate_skill and "--attempt-id" in validate_skill and "tieout_summary.md" in validate_skill and "retry" in validate_skill, "Validate lacks full generic parity evidence and retry history", errors)
+    require("reproduced `tieout_result.json`" in review_skill and "limitations" in review_skill, "Review does not independently reproduce parity evidence", errors)
+    require("Derive the parity scoreboard" in release_skill and "does_not_prove" in release_skill, "Release does not derive its claim from reviewed evidence", errors)
+    require("shell=False" in tieout_runner and "selected_keys_digest" in tieout_runner and "render_summary" in tieout_runner and "attempt_id" in tieout_runner and "include_values_in_evidence" in text("config/tieout.yaml"), "Generic tie-out runner lacks safe execution, selection, append-only summary, or privacy controls", errors)
     require("config/tieout.yaml" in restart_skill, "Restart does not account for approved tie-out contracts", errors)
     require("runtime-neutral semantic responsibilities" in map_skill, "Map skill lacks taxonomy-neutral fallback", errors)
     require("optional refinements" in map_contract, "Map contract does not make taxonomies optional", errors)
@@ -148,6 +158,7 @@ def main() -> int:
         ROOT / "contracts/tieout_contract.schema.json",
         ROOT / "contracts/tieout_result.schema.json",
         ROOT / "contracts/fixture_manifest.schema.json",
+        ROOT / "contracts/evidence_bundle.schema.json",
     ]
     for path in schema_paths:
         require(path.exists(), f"Missing schema: {path.relative_to(ROOT)}", errors)
@@ -175,11 +186,22 @@ def main() -> int:
     require((ROOT / "docs/runbooks/LOCAL_PARITY.md").exists(), "Missing local parity runbook", errors)
     require((ROOT / "scripts/run_tieout.py").exists(), "Missing generic tie-out runner", errors)
 
+    test_pressure = text(".github/skills/test/evals/cases.md")
+    validate_pressure = text(".github/skills/validate/evals/cases.md")
+    review_pressure = text(".github/skills/review/evals/cases.md")
+    release_pressure = text(".github/skills/release/evals/cases.md")
+    require("Coverage claim without assertions" in test_pressure and "Nondeterministic producer" in test_pressure, "Test evaluations lack coverage and determinism pressure cases", errors)
+    require("Failed mandatory fixture coverage" in validate_pressure and "Retry overwrites failed evidence" in validate_pressure, "Validate evaluations lack coverage and append-only retry cases", errors)
+    require("Retry lineage missing" in review_pressure and "Reviewer tries to repair" in review_pressure, "Review evaluations lack independence and retry-lineage cases", errors)
+    require("Hand-entered parity scoreboard" in release_pressure and "Candidate packet treated as approval" in release_pressure, "Release evaluations lack evidence-derived scoreboard and human-gate cases", errors)
+
     for relative in [
         ".github/skills/restart/evals/cases.md",
         ".github/skills/specify/evals/cases.md",
         ".github/skills/test/evals/cases.md",
         ".github/skills/validate/evals/cases.md",
+        ".github/skills/review/evals/cases.md",
+        ".github/skills/release/evals/cases.md",
         ".github/skills/trace/evals/cases.md",
         ".github/skills/map/evals/cases.md",
         ".github/skills/harvest/evals/cases.md",

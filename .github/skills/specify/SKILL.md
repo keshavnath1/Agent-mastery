@@ -17,11 +17,12 @@ Approved migration profile, intake manifest, business context, available SAS ref
 
 1. State the outcome, user problem, scope, exclusions, invariants, commands, and success criteria.
 2. Split the work into independently testable capabilities and assign stable behavior IDs.
-3. For every required parity claim, define keys, governed fixture policy, immutable SAS oracle path, expected and actual columns, comparison mode, human-approved tolerance, producer entry point, and proof boundary.
-4. Materialize those decisions in `config/tieout.yaml` using `contracts/tieout_contract.schema.json`; keep status `DRAFT` until the fixture/oracle hashes and exact contract receive human approval.
-5. Carry any separately approved contract values and limitations into the PRD and module SPEC without broadening the claim.
-6. Record unknown keys, oracle files, metrics, tolerances, producer behavior, and owners as unresolved; do not create an empty parity contract and later call validation complete.
-7. Validate the PRD, capability map, module SPEC, and draft tie-out contract, then request human approval.
+3. For every required parity claim, define keys, governed fixture policy and coverage assertions, immutable intake-manifest hash, immutable SAS oracle path/hash/format/representation, expected and actual columns, comparison mode, human-approved tolerance, producer entry point, and proof boundary.
+4. Record the human decision source and rationale for comparison modes and tolerances; observed data may inform the decision but cannot silently define acceptance.
+5. Materialize those decisions in `config/tieout.yaml` using `contracts/tieout_contract.schema.json`; keep status `DRAFT` until the intake, fixture, oracle, selector, comparison, decision-basis, and exact contract hashes receive human approval.
+6. Carry any separately approved contract values and limitations into the PRD and module SPEC without broadening the claim.
+7. Record unknown keys, oracle files, metrics, tolerances, producer behavior, and owners as unresolved; do not create an empty parity contract and later call validation complete.
+8. Validate the PRD, capability map, module SPEC, and draft tie-out contract, then request human approval.
 
 ## Output artifact
 
@@ -37,4 +38,4 @@ Do not write implementation code, derive expected outputs from generated Python,
 
 ## Stop conditions
 
-Stop when acceptance behavior, keys, oracle ownership, comparison metric, tolerance, fixture policy, producer entry point, or approver is ambiguous.
+Stop when acceptance behavior, keys, intake provenance, oracle ownership or representation, comparison metric, tolerance rationale, fixture coverage policy, producer entry point, or approver is ambiguous.

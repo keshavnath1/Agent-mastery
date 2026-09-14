@@ -11,9 +11,15 @@ scope:
 
 key_columns: []
 
+intake_manifest:
+  path: null
+  sha256: null
+
 oracle:
   path: null
   sha256: null
+  format: null
+  representation_note: null
 
 fixture_manifest:
   path: null
@@ -21,10 +27,11 @@ fixture_manifest:
 
 producer:
   # Use an argv list, never a shell string. The runner replaces {python},
-  # {root}, {run_id}, and {actual_output_path} tokens deterministically.
+  # {root}, {run_id}, {attempt_id}, and {actual_output_path} tokens deterministically.
   command: []
   cwd: "."
   actual_output_path: null
+  # Approved contracts should use artifacts/generated/{run_id}/{attempt_id}/actual.csv.
   timeout_seconds: 300
 
 comparisons: []
@@ -38,9 +45,14 @@ comparisons: []
 #     scale_floor: 1.0e-15
 #     null_equal: false
 
+decision_basis:
+  source: null
+  rationale: null
+
 output:
-  result_path: artifacts/evidence/runs/{run_id}/tieout_result.json
-  evidence_path: artifacts/evidence/runs/{run_id}/evidence.json
+  result_path: artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/tieout_result.json
+  summary_path: artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/tieout_summary.md
+  evidence_path: artifacts/evidence/runs/{run_id}/attempts/{attempt_id}/evidence.json
 
 privacy:
   hash_keys_in_evidence: true
@@ -56,7 +68,7 @@ oracle_lock:
   implementation_may_modify: false
 
 notes:
-  - The specify stage must replace every null or empty execution field with human-approved module values.
+  - The specify stage must replace every null or empty execution field with human-approved module values, including intake/oracle hashes and comparison rationale.
   - The test stage must create and hash the governed fixture manifest and expected oracle without deriving expected output from generated Python.
   - The generate stage must provide the producer declared above; the producer may write actual output only.
   - The validate stage must invoke the generic tie-out runner and cannot claim local parity without its PASS evidence.
