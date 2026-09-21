@@ -19,10 +19,12 @@ def run(*args: str) -> None:
 def main() -> int:
     run("scripts/validate_project.py")
     run("scripts/validate_agent_architecture.py")
+    run("scripts/validate_learning_memory.py", "--templates")
     run("-m", "unittest", "-v", "tests.architecture.test_agent_workflow")
     run("-m", "unittest", "-v", "tests.framework.test_generic_tieout")
+    run("-m", "unittest", "-v", "tests.framework.test_governed_learning_memory")
     print("TEMPLATE SMOKE TEST: PASS")
-    print("Boundary: this validates repository machinery and synthetic comparator cases only; it executes no SAS or migration implementation.")
+    print("Boundary: this validates repository machinery, synthetic comparator cases, and inert learning-memory contracts only; it executes no SAS or migration implementation.")
     return 0
 
 

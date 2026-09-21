@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/learning_pattern.schema.json",
+  "title": "Governed Learning Pattern Frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_status",
+    "pattern_id",
+    "status",
+    "title",
+    "summary",
+    "consolidated_by",
+    "occurrences",
+    "independence_review",
+    "applicability",
+    "does_not_prove",
+    "prohibited_generalizations",
+    "candidate_skill_targets",
+    "validation_required",
+    "promotion",
+    "sensitivity"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_status": {"enum": ["TEMPLATE", "RECORDED"]},
+    "pattern_id": {"type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]{2,127}$"},
+    "status": {"enum": ["TEMPLATE", "CANDIDATE", "PROPOSED", "PROMOTED", "REJECTED", "SUPERSEDED"]},
+    "title": {"type": "string", "minLength": 3, "maxLength": 200},
+    "summary": {"type": "string", "minLength": 3, "maxLength": 1000},
+    "consolidated_by": {"$ref": "#/$defs/actor"},
+    "occurrences": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["observation_id", "observation_path", "observation_sha256", "run_id", "module_id", "context"],
+        "properties": {
+          "observation_id": {"type": "string", "minLength": 3, "maxLength": 128},
+          "observation_path": {"type": "string", "minLength": 1, "maxLength": 500},
+          "observation_sha256": {"$ref": "#/$defs/sha256"},
+          "run_id": {"type": "string", "minLength": 3, "maxLength": 160},
+          "module_id": {"type": "string", "minLength": 3, "maxLength": 128},
+          "context": {"$ref": "#/$defs/recurrence_context"}
+        }
+      }
+    },
+    "independence_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer", "reviewed_at", "conclusion", "rationale"],
+      "properties": {
+        "reviewer": {"$ref": "#/$defs/checker"},
+        "reviewed_at": {"type": "string", "format": "date-time"},
+        "conclusion": {"enum": ["INDEPENDENT", "CORRELATED", "INSUFFICIENT"]},
+        "rationale": {"type": "string", "minLength": 20, "maxLength": 2000}
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_platforms", "migration_modes", "semantic_boundaries", "target_runtimes", "model_families", "population_scopes", "required_preconditions"],
+      "properties": {
+        "source_platforms": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "migration_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "semantic_boundaries": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 200}},
+        "target_runtimes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "model_families": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "population_scopes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "required_preconditions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 500}}
+      }
+    },
+    "does_not_prove": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 300}
+    },
+    "prohibited_generalizations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 500}
+    },
+    "candidate_skill_targets": {
+      "type": "array",
+      "maxItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^\\.github/skills/[a-z0-9-]+/SKILL\\.md$"}
+    },
+    "validation_required": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architecture", "normal", "pressure", "independent_review"],
+      "properties": {
+        "architecture": {"const": true},
+        "normal": {"const": true},
+        "pressure": {"const": true},
+        "independent_review": {"const": true}
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["human_decision", "run_state_path", "run_state_sha256", "promotion_commit", "github_review"],
+      "properties": {
+        "human_decision": {"enum": ["PENDING", "APPROVED", "REJECTED"]},
+        "run_state_path": {"type": ["string", "null"], "maxLength": 500},
+        "run_state_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "promotion_commit": {"oneOf": [{"$ref": "#/$defs/sha1"}, {"type": "null"}]},
+        "github_review": {"oneOf": [{"$ref": "#/$defs/github_review"}, {"type": "null"}]}
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["public_template_safe", "contains_raw_business_data", "contains_secrets", "contains_chain_of_thought", "reviewer", "reviewed_at"],
+      "properties": {
+        "public_template_safe": {"type": "boolean"},
+        "contains_raw_business_data": {"const": false},
+        "contains_secrets": {"const": false},
+        "contains_chain_of_thought": {"const": false},
+        "reviewer": {"$ref": "#/$defs/checker"},
+        "reviewed_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "sha1": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "role"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 2, "maxLength": 200},
+        "role": {"enum": ["analyst", "checker", "human_approver"]}
+      }
+    },
+    "checker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "role"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 2, "maxLength": 200},
+        "role": {"enum": ["checker", "human_approver"]}
+      }
+    },
+    "recurrence_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_commit", "source_platform", "migration_mode", "semantic_boundary", "run_state", "fixture", "oracle", "expected_output", "evaluator_manifest", "result", "agent_model", "target_runtime", "population_scope"],
+      "properties": {
+        "source_commit": {"$ref": "#/$defs/sha1"},
+        "source_platform": {"type": "string", "minLength": 1, "maxLength": 100},
+        "migration_mode": {"type": "string", "minLength": 1, "maxLength": 100},
+        "semantic_boundary": {"type": "string", "minLength": 1, "maxLength": 200},
+        "run_state": {"$ref": "#/$defs/file_ref"},
+        "fixture": {"oneOf": [{"$ref": "#/$defs/file_ref"}, {"type": "null"}]},
+        "oracle": {"oneOf": [{"$ref": "#/$defs/file_ref"}, {"type": "null"}]},
+        "expected_output": {"oneOf": [{"$ref": "#/$defs/file_ref"}, {"type": "null"}]},
+        "evaluator_manifest": {"$ref": "#/$defs/file_ref"},
+        "result": {"$ref": "#/$defs/file_ref"},
+        "agent_model": {"type": "string", "minLength": 1, "maxLength": 100},
+        "target_runtime": {"type": "string", "minLength": 1, "maxLength": 100},
+        "population_scope": {"type": "string", "minLength": 1, "maxLength": 100}
+      }
+    },
+    "file_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 500},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "github_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "pull_request", "review_id", "reviewer_login", "reviewed_commit"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "pull_request": {"type": "integer", "minimum": 1},
+        "review_id": {"type": "integer", "minimum": 1},
+        "reviewer_login": {"type": "string", "minLength": 1, "maxLength": 100},
+        "reviewed_commit": {"$ref": "#/$defs/sha1"}
+      }
+    }
+  }
+}

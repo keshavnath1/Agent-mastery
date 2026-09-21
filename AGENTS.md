@@ -86,6 +86,16 @@ map   → policy/policy_registry.yaml
 
 Reference canonical artifacts by path and hash; never maintain competing editable copies.
 
+## Governed learning memory
+
+The `learn` stage may compile accepted migration outcomes into an audit-safe observation, a candidate pattern, and at most one atomic skill-change proposal. Follow `docs/learning/WIKI_CONTRACT.md` and validate these artifacts with `scripts/validate_learning_memory.py`.
+
+The learning memory is advisory. It cannot override the PRD, SPEC, ADR, tie-out contract, oracle lock, expected output, tolerance, evaluator, review, or human decision. Ordinary migration skills must not browse it as a hidden requirements source. Record observable actions, results, paths, hashes, and attributable decisions; never persist private chain-of-thought, secrets, raw business data, or unredacted mismatch values.
+
+A single incident may become a regression case but not a reusable rule. Pattern promotion requires at least two independently linked and hash-verified run observations, structured fixture/oracle/evaluator/model/runtime/population context, explicit applicability and `does_not_prove` boundaries, architecture and normal and pressure validation against frozen evaluator hashes, independent review, rollback history, and human approval. Revalidate every model, runtime, population, and production context; success in local Python must not be generalized to PySpark, Ray, Cython, full population, distributed performance, or production readiness.
+
+A skill proposal must resolve real Git commits and an exact patch, and `git diff` must change exactly one declared `SKILL.md`. Evaluator or governance changes require a separate approved baseline commit. Promotion follows `learn → learn_review → learn_promotion`; the final durable state must bind the proposal or pattern, independent review, candidate commit, attributable human approver, and timestamp.
+
 ## Evidence rules
 
 1. Work on the earliest failed gate.
@@ -101,6 +111,7 @@ Reference canonical artifacts by path and hash; never maintain competing editabl
 11. Independent review must rerun the frozen command, and release metrics must be derived from reviewed evidence rather than copied by hand.
 12. Do not claim semantic parity, selected-runtime proof, oracle lock, ROI, release, or completion without corresponding approved evidence.
 13. State proof boundaries explicitly; sample evidence does not prove unselected records, and local evidence does not automatically prove full-population or distributed behavior.
+14. Preserve rejected learning proposals and their evidence; a higher aggregate evaluation score cannot compensate for a weakened governance control.
 
 ## Git rules
 
@@ -124,6 +135,7 @@ python3 scripts/project.py validate
 python3 scripts/project.py intake
 python3 scripts/project.py status
 python3 scripts/project.py tieout --run-id <run-id> --attempt-id <attempt-id>
+python3 scripts/project.py learning-validate --all
 python3 scripts/validate_agent_architecture.py
 ```
 

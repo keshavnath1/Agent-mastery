@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "record_status": "TEMPLATE",
+  "review_id": "REVIEW-TEMPLATE-001",
+  "proposal_id": "PROPOSAL-TEMPLATE-001",
+  "author_identity": "template-author",
+  "reviewer": {
+    "identity": "template-checker",
+    "role": "checker"
+  },
+  "reviewed_at": "2000-01-01T00:00:00Z",
+  "candidate_commit": "0000000000000000000000000000000000000000",
+  "verdict": "BLOCKED",
+  "github_review": null,
+  "reruns": [
+    {
+      "kind": "architecture",
+      "command": ["python3", "scripts/validate_agent_architecture.py"],
+      "exit_code": 1,
+      "result": "BLOCKED",
+      "result_path": "artifacts/learning/reviews/REVIEW-TEMPLATE-001/architecture.txt",
+      "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "evaluator_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "kind": "normal",
+      "command": ["python3", "-m", "unittest"],
+      "exit_code": 1,
+      "result": "BLOCKED",
+      "result_path": "artifacts/learning/reviews/REVIEW-TEMPLATE-001/normal.txt",
+      "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "evaluator_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "kind": "pressure",
+      "command": ["python3", "-m", "unittest"],
+      "exit_code": 1,
+      "result": "BLOCKED",
+      "result_path": "artifacts/learning/reviews/REVIEW-TEMPLATE-001/pressure.txt",
+      "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "evaluator_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "findings": [
+    "This inert template is not an independent review."
+  ],
+  "privacy_review": {
+    "contains_chain_of_thought": false,
+    "contains_secrets": false,
+    "contains_raw_business_data": false
+  }
+}

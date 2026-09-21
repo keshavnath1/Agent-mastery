@@ -97,6 +97,9 @@ def main() -> int:
     require(rules["one_skill_per_prompt"] is True, "one_skill_per_prompt must be true", errors)
     require(rules["stop_at_human_gate"] is True, "stop_at_human_gate must be true", errors)
     require(rules["self_approval_forbidden"] is True, "self_approval_forbidden must be true", errors)
+    require(rules["learning_memory_advisory_only"] is True, "Learning memory must remain advisory", errors)
+    require(rules["learning_independent_run_minimum"] == 2, "Reusable learning must require two independent runs", errors)
+    require(rules["learning_promotion_human_only"] is True, "Learning promotion must remain human-only", errors)
     require(workflow["canonical_artifacts"]["execution_trace"] == "stage1_extraction/output/execution_trace.json", "Wrong canonical trace path", errors)
     require(workflow["canonical_artifacts"]["policy_registry"] == "policy/policy_registry.yaml", "Wrong canonical policy registry path", errors)
     require(workflow["canonical_artifacts"]["tieout_contract"] == "config/tieout.yaml", "Wrong canonical tie-out path", errors)
@@ -104,6 +107,10 @@ def main() -> int:
     require(workflow["canonical_artifacts"]["tieout_summary"] == "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md", "Wrong canonical tie-out summary path", errors)
     require(workflow["canonical_artifacts"]["module_spec"] == "docs/specs/<module>.md", "Module SPEC path must be runtime-neutral", errors)
     require(workflow["canonical_artifacts"]["implementation"] == "src/sas_migration/semantic/", "Implementation path must be generic", errors)
+    require(workflow["canonical_artifacts"]["learning_observation"] == "artifacts/learning/observations/<observation-id>.json", "Wrong learning observation path", errors)
+    require(workflow["canonical_artifacts"]["learning_pattern"] == "docs/learning/patterns/<pattern-id>.md", "Wrong learning pattern path", errors)
+    require(workflow["canonical_artifacts"]["skill_change_proposal"] == "artifacts/learning/proposals/<proposal-id>.json", "Wrong skill proposal path", errors)
+    require(workflow["canonical_artifacts"]["learning_review"] == "artifacts/learning/reviews/<review-id>.json", "Wrong learning review path", errors)
     require({"next_permitted_command", "next_action", "copy_paste_next"} <= set(workflow["stage_result_fields"]), "Stage Result lacks copy-ready next-action fields", errors)
 
     expected_order = [
@@ -115,6 +122,9 @@ def main() -> int:
     ]
     require([act["skills"] for act in workflow["acts"]] == expected_order, "Workflow act order differs from the lifecycle contract", errors)
     require(workflow["recovery_loop"]["sequence"] == ["ingest", "diagnose", "repair", "review"], "Recovery sequence is incorrect", errors)
+    learning_control = workflow["learning_control"]
+    require(learning_control["review_stage"] == "learn_review" and learning_control["promotion_stage"] == "learn_promotion", "Learning review or promotion stage is not explicit", errors)
+    require(learning_control["transitions"][1]["status"] == "PENDING_HUMAN_APPROVAL", "Learning promotion does not stop at a pending human gate", errors)
     interview_gate = next((gate for gate in workflow["human_gates"] if gate.get("after") == "interview"), {})
     require("tie-out population" in interview_gate.get("approval", ""), "Interview gate lacks tie-out population approval", errors)
 
@@ -135,7 +145,11 @@ def main() -> int:
     review_skill = text(".github/skills/review/SKILL.md")
     release_skill = text(".github/skills/release/SKILL.md")
     restart_skill = text(".github/skills/restart/SKILL.md")
+    learn_skill = text(".github/skills/learn/SKILL.md")
+    learn_pressure = text(".github/skills/learn/evals/cases.md")
+    learning_contract = text("docs/learning/WIKI_CONTRACT.md")
     tieout_runner = text("scripts/run_tieout.py")
+    learning_validator = text("scripts/validate_learning_memory.py")
 
     require("stage1_extraction/output/execution_trace.json" in trace_skill, "Trace skill lacks canonical path", errors)
     require("artifacts/traces/<module>.json" not in trace_skill, "Trace skill retains a competing editable path", errors)
@@ -163,6 +177,10 @@ def main() -> int:
     require("explicitly selects LP Emulator" in map_contract, "Map contract lacks the LP Emulator ADR boundary", errors)
     require("No matching taxonomy" in map_pressure, "Map evaluations lack taxonomy-neutral fallback coverage", errors)
     require("Single formula owner" in map_pressure, "Map evaluations lack single formula-owner coverage", errors)
+    require("at least two independent run IDs" in learn_skill and "exactly one" in learn_skill and "learn_promotion / PENDING_HUMAN_APPROVAL" in learn_skill, "Learn skill lacks recurrence, atomicity, or durable promotion controls", errors)
+    require("Hidden reasoning capture" in learn_pressure and "Cross-model negative transfer" in learn_pressure and "Aggregate score masks regression" in learn_pressure, "Learn evaluations lack privacy, transfer, or governance pressure cases", errors)
+    require("advisory" in learning_contract.lower() and "chain-of-thought" in learning_contract, "Learning contract lacks authority or privacy boundary", errors)
+    require("two independent run IDs" in learning_validator and "SHA-256 mismatch" in learning_validator and "candidate diff must change exactly" in learning_validator and "proposal author cannot independently review" in learning_validator, "Learning validator lacks recurrence, provenance, Git-diff, or independence enforcement", errors)
 
     schema_paths = [
         ROOT / ".github/skills/trace/schemas/execution_trace.schema.json",
@@ -174,6 +192,10 @@ def main() -> int:
         ROOT / "contracts/tieout_result.schema.json",
         ROOT / "contracts/fixture_manifest.schema.json",
         ROOT / "contracts/evidence_bundle.schema.json",
+        ROOT / "contracts/learning_observation.schema.json",
+        ROOT / "contracts/learning_pattern.schema.json",
+        ROOT / "contracts/learning_review.schema.json",
+        ROOT / "contracts/skill_change_proposal.schema.json",
     ]
     for path in schema_paths:
         require(path.exists(), f"Missing schema: {path.relative_to(ROOT)}", errors)
@@ -222,6 +244,7 @@ def main() -> int:
         ".github/skills/map/evals/cases.md",
         ".github/skills/harvest/evals/cases.md",
         ".github/skills/import/evals/cases.md",
+        ".github/skills/learn/evals/cases.md",
     ]:
         require((ROOT / relative).exists(), f"Missing pressure evaluations: {relative}", errors)
 
@@ -245,6 +268,25 @@ def main() -> int:
     require(not list((ROOT / "docs/adrs").glob("*.md")), "Clean template contains an active ADR", errors)
     require(not list((ROOT / "src/sas_migration").rglob("*.py")), "Clean template contains generated Python", errors)
     require(not visible_files(ROOT / "tests/generated"), "Clean template contains generated tests or fixtures", errors)
+    require(not visible_files(ROOT / "artifacts/learning/observations"), "Clean template contains real learning observations", errors)
+    require(not visible_files(ROOT / "artifacts/learning/proposals"), "Clean template contains real skill-change proposals", errors)
+    require(not visible_files(ROOT / "artifacts/learning/reviews"), "Clean template contains real learning reviews", errors)
+    require(not visible_files(ROOT / "docs/learning/patterns"), "Clean template contains active learning patterns", errors)
+
+    for relative in [
+        "docs/learning/WIKI_CONTRACT.md",
+        "docs/learning/index.md",
+        "docs/learning/evolution-log.md",
+        "docs/learning/skill-impact.md",
+        "docs/runbooks/GOVERNED_LEARNING.md",
+        "scripts/validate_learning_memory.py",
+        ".github/skills/learn/templates/learning_observation.template.json",
+        ".github/skills/learn/templates/learning_pattern.template.md",
+        ".github/skills/learn/templates/skill_change_proposal.template.json",
+        ".github/skills/learn/templates/learning_review.template.json",
+        ".github/workflows/template-validation.yml",
+    ]:
+        require((ROOT / relative).is_file(), f"Missing governed learning-memory asset: {relative}", errors)
 
     allowed_intake = {"README.md", "REQUESTED_ARTIFACTS.md", ".gitkeep"}
     unexpected_intake = [path for path in (ROOT / "intake").rglob("*") if path.is_file() and path.name not in allowed_intake]

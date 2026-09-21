@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "record_status": "TEMPLATE",
+  "proposal_id": "PROPOSAL-TEMPLATE-001",
+  "status": "TEMPLATE",
+  "created_at": "2000-01-01T00:00:00Z",
+  "author": {
+    "identity": "template-author",
+    "role": "analyst"
+  },
+  "target_skill": "learn",
+  "target_skill_path": ".github/skills/learn/SKILL.md",
+  "source_patterns": [
+    {
+      "id": "PATTERN-TEMPLATE-001",
+      "path": "docs/learning/patterns/PATTERN-TEMPLATE-001.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "hypothesis": "Replace this with one evidence-backed, falsifiable skill-change hypothesis.",
+  "change_scope": "Replace this with the smallest atomic change to the named skill.",
+  "baseline_commit": "0000000000000000000000000000000000000000",
+  "candidate_commit": null,
+  "patch": {
+    "path": "artifacts/learning/proposals/PROPOSAL-TEMPLATE-001/skill.patch",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "protected_contract_changes": {
+    "prd": false,
+    "spec": false,
+    "adr": false,
+    "tieout_contract": false,
+    "oracle": false,
+    "expected_outputs": false,
+    "tolerances": false,
+    "evaluators": false,
+    "approval_gates": false
+  },
+  "frozen_evaluators": [
+    {
+      "kind": "architecture",
+      "path": "scripts/validate_agent_architecture.py",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "kind": "normal",
+      "path": ".github/skills/learn/evals/cases.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "kind": "pressure",
+      "path": ".github/skills/learn/evals/cases.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "validation": {
+    "runs": [
+      {
+        "kind": "architecture",
+        "command": ["python3", "scripts/validate_agent_architecture.py"],
+        "exit_code": 1,
+        "result": "NOT_RUN",
+        "result_path": "artifacts/learning/proposals/PROPOSAL-TEMPLATE-001/architecture.txt",
+        "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "evaluator_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "kind": "normal",
+        "command": ["python3", "-m", "unittest", "tests.framework.test_governed_learning_memory"],
+        "exit_code": 1,
+        "result": "NOT_RUN",
+        "result_path": "artifacts/learning/proposals/PROPOSAL-TEMPLATE-001/normal.txt",
+        "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "evaluator_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "kind": "pressure",
+        "command": ["python3", "-m", "unittest", "tests.framework.test_governed_learning_memory"],
+        "exit_code": 1,
+        "result": "NOT_RUN",
+        "result_path": "artifacts/learning/proposals/PROPOSAL-TEMPLATE-001/pressure.txt",
+        "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "evaluator_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "governance_regressions": [],
+    "target_improved_or_defect_resolved": false,
+    "result": "NOT_RUN"
+  },
+  "independent_review": null,
+  "proof_boundary": [
+    "This inert template proves nothing and cannot be promoted."
+  ],
+  "rollback": {
+    "strategy": "Discard the isolated candidate worktree and preserve the proposal history.",
+    "rejected_changes_preserved_in_history": true
+  },
+  "human_promotion": {
+    "decision": "PENDING",
+    "run_state_path": null,
+    "run_state_sha256": null,
+    "promotion_commit": null,
+    "github_review": null
+  }
+}

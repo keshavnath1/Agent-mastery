@@ -15,6 +15,7 @@ This repository is a **clean-slate, specification-driven framework** for migrati
 | `contracts/` | JSON schemas for durable run state, semantic IR, governed fixtures, tie-out contracts/results, and evidence |
 | `scripts/` | Framework validation, intake inventory, status, and the generic contract-driven tie-out runner used by active skills |
 | `docs/runbooks/` | Intake, Git, local execution, cluster evidence, and Stage Result contracts |
+| `docs/learning/` | Empty governed learning-memory index, evolution log, skill-impact tracker, contract, and pattern directory |
 | `examples/lc-logit-01/` | Documentation-only example showing how one score-only migration used the framework |
 
 ## What is intentionally excluded
@@ -26,6 +27,7 @@ This repository is a **clean-slate, specification-driven framework** for migrati
 | Generated Python semantic or adapter code | Created by the approved `generate` or `adapt` stage |
 | Generated unit, contract, parity, and fixture files | Created by the approved `test` stage |
 | Run state, trace, policy registry, evidence, reviews, and releases | Created on a dedicated migration branch; deliberately absent from this public template |
+| Real learning observations, active patterns, and skill-change proposals | Created by `learn` from accepted evidence on a governed program branch |
 | Incoming cluster logs and manifests | Local `cluster_evidence/incoming/`; ignored by Git by default |
 
 ## Lifecycle model
@@ -72,6 +74,21 @@ ingest → diagnose → repair → review → retry earliest failed gate
 ```
 
 Human approval gates are mandatory. An agent may prepare evidence and recommend a decision, but it may not approve intent, requirements, architecture, evidence changes, repairs, release, or learning promotion on the human's behalf.
+
+## Governed learning memory
+
+The `learn` stage now provides a persistent, cross-migration memory without creating an autonomous self-modifying agent:
+
+```text
+accepted evidence → audit-safe observation → independent recurrence?
+    → candidate pattern → one-skill proposal
+    → frozen architecture + normal + pressure validation
+    → independent rerun/review → durable human promotion gate
+```
+
+The learning memory is an **advisory layer**, not another source of business truth. PRD, SPEC, ADR, tie-out contracts, oracle locks, evidence, and human decisions remain authoritative. A reusable pattern links and hash-verifies at least two observations with structured recurrence context, explicit applicability, prohibited generalizations, and proof limitations. A proposal resolves real Git commits, verifies an exact one-skill diff and patch, freezes evaluator hashes and commands, preserves result files, requires a different checker, and stops at `learn_promotion / PENDING_HUMAN_APPROVAL`. Promotion then requires an authenticated approved GitHub review on the exact candidate commit. The proposal cannot change expected outputs, tolerances, evaluators, approval gates, or a second skill to obtain PASS.
+
+The repository stores only observable events and evidence references—never private chain-of-thought, secrets, raw customer data, or unredacted prediction values. See [`docs/learning/WIKI_CONTRACT.md`](docs/learning/WIKI_CONTRACT.md) and [`docs/runbooks/GOVERNED_LEARNING.md`](docs/runbooks/GOVERNED_LEARNING.md).
 
 ## Clean-checkout quick start
 
@@ -201,6 +218,7 @@ Inspect the private files under intake. I want SAS-to-Python migration with keye
 | `validate` | Attempt-specific `tieout_result.json`, generated `tieout_summary.md`, and `evidence.json` under `artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/` when local parity is required |
 | `review` | `artifacts/reviews/<run-id>.md` |
 | `release` | `artifacts/releases/<run-id>/release_packet.md` |
+| `learn` | Observation under `artifacts/learning/observations/`, candidate pattern under `docs/learning/patterns/`, proposal under `artifacts/learning/proposals/`, or independent review under `artifacts/learning/reviews/` |
 
 Do not maintain competing editable copies of canonical artifacts. Reference them by repository-relative path and SHA-256.
 
@@ -235,4 +253,5 @@ Read the following in order:
 3. [`docs/runbooks/STAGE_CONTRACT.md`](docs/runbooks/STAGE_CONTRACT.md) for the standard Stage Result.
 4. [`docs/runbooks/INTAKE.md`](docs/runbooks/INTAKE.md) for local source onboarding.
 5. [`docs/runbooks/LOCAL_PARITY.md`](docs/runbooks/LOCAL_PARITY.md) for contract-driven SAS-to-Python tie-out.
-6. [`examples/lc-logit-01/README.md`](examples/lc-logit-01/README.md) for the documentation-only example.
+6. [`docs/runbooks/GOVERNED_LEARNING.md`](docs/runbooks/GOVERNED_LEARNING.md) for cross-migration learning and human promotion.
+7. [`examples/lc-logit-01/README.md`](examples/lc-logit-01/README.md) for the documentation-only example.

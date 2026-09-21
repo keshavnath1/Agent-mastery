@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/learning_observation.schema.json",
+  "title": "Governed Learning Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_status",
+    "observation_id",
+    "run_id",
+    "module_id",
+    "recorded_at",
+    "recorded_by",
+    "skill_invoked",
+    "outcome",
+    "input_evidence",
+    "output_evidence",
+    "observable_events",
+    "failure",
+    "human_decisions",
+    "candidate_pattern_ids",
+    "privacy_review"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_status": {"enum": ["TEMPLATE", "RECORDED"]},
+    "observation_id": {"type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]{2,127}$"},
+    "run_id": {"type": "string", "minLength": 3, "maxLength": 160},
+    "module_id": {"type": "string", "minLength": 3, "maxLength": 128},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "recorded_by": {"$ref": "#/$defs/actor"},
+    "skill_invoked": {"type": "string", "minLength": 1, "maxLength": 80},
+    "outcome": {"enum": ["PASS", "FAIL", "BLOCKED"]},
+    "input_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/evidence_ref"}
+    },
+    "output_evidence": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidence_ref"}
+    },
+    "observable_events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1000}
+    },
+    "failure": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["classification", "owning_layer", "message"],
+          "properties": {
+            "classification": {"type": "string", "minLength": 1, "maxLength": 120},
+            "owning_layer": {"enum": ["requirements", "architecture", "source_semantics", "semantic_core", "runtime_adapter", "fixture", "oracle", "comparator", "workflow", "skill"]},
+            "message": {"type": "string", "minLength": 1, "maxLength": 2000}
+          }
+        }
+      ]
+    },
+    "human_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision", "status", "decided_by", "decided_at"],
+        "properties": {
+          "decision": {"type": "string", "minLength": 1, "maxLength": 500},
+          "status": {"enum": ["PENDING", "APPROVED", "REJECTED"]},
+          "decided_by": {"oneOf": [{"$ref": "#/$defs/actor"}, {"type": "null"}]},
+          "decided_at": {"type": ["string", "null"], "format": "date-time"}
+        }
+      }
+    },
+    "candidate_pattern_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]{2,127}$"}
+    },
+    "privacy_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contains_chain_of_thought", "contains_secrets", "contains_raw_business_data", "redactions", "reviewer", "reviewed_at"],
+      "properties": {
+        "contains_chain_of_thought": {"const": false},
+        "contains_secrets": {"const": false},
+        "contains_raw_business_data": {"const": false},
+        "redactions": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 500}},
+        "reviewer": {"$ref": "#/$defs/checker"},
+        "reviewed_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "role"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 2, "maxLength": 200},
+        "role": {"enum": ["analyst", "maker", "checker", "orchestrator", "human_approver"]}
+      }
+    },
+    "checker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "role"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 2, "maxLength": 200},
+        "role": {"enum": ["checker", "human_approver"]}
+      }
+    },
+    "evidence_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "kind"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 500},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "kind": {"enum": ["run_state", "stage_result", "test_result", "tieout_result", "review", "release", "incident", "runtime_evidence", "commit", "other"]}
+      }
+    }
+  }
+}

@@ -29,6 +29,7 @@ Use whenever a user prompt requests `new`, `resume`, `restart`, stage continuati
 8. Update durable state atomically. Stop at every human gate and after every skill invocation.
 9. Derive the next permitted command from the updated state. Write a complete `Copy/paste next` Copilot message using actual module, run, artifact path, hash, approval scope, one permitted skill, and stop point. For `FAIL` or `BLOCKED`, route to the earliest owning recovery step instead of normal progression.
 10. End with the complete Stage Result block in `docs/runbooks/STAGE_CONTRACT.md`.
+11. For learning proposals, enforce `learn → learn_review → learn_promotion`. Authorize `review` only at `learn_review`; after an `ACCEPT` review, write `learn_promotion / PENDING_HUMAN_APPROVAL` bound to the proposal ID, review ID, and candidate commit, then stop. Record `APPROVED` or `REJECTED` only after the human explicitly replies.
 
 ## Canonical outputs
 
@@ -41,6 +42,7 @@ Orchestrate writes only durable control records under `artifacts/run_state/`. It
 - Required input artifact and output artifact are versioned and hash-addressed.
 - Protected paths did not change.
 - Human gates were not crossed automatically.
+- A learning promotion state names the exact subject, independent review, candidate commit, human actor, and decision timestamp.
 - Restart stopped at `intake / READY`.
 - `Next action` explains the required human action in plain language.
 - `Copy/paste next` is complete, uses actual known identifiers and hashes, invokes no more than one specialist skill, and matches durable state.
@@ -48,7 +50,7 @@ Orchestrate writes only durable control records under `artifacts/run_state/`. It
 
 ## Boundaries
 
-Do not perform specialist analysis, generate code, approve evidence, change protected artifacts, skip a stage, cross a human gate, or declare release. A generated approval message is a proposed user action and must never be recorded as approval until the human sends it. Do not convert user-facing prompts into large workflow documents; prompts route and skills execute.
+Do not perform specialist analysis, generate code, approve evidence, change protected artifacts, skip a stage, cross a human gate, or declare release. A generated approval message is a proposed user action and must never be recorded as approval until the human sends it. Never treat a free-text agent field as human approval. Do not convert user-facing prompts into large workflow documents; prompts route and skills execute.
 
 ## Stop conditions
 

@@ -2,38 +2,51 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Run State",
   "type": "object",
-  "required": [
-    "run_id",
-    "module_id",
-    "stage",
-    "status",
-    "attempts",
-    "history"
-  ],
+  "required": ["run_id", "module_id", "stage", "status", "attempts", "history"],
   "properties": {
-    "run_id": {
-      "type": "string"
-    },
-    "module_id": {
-      "type": "string"
-    },
+    "run_id": {"type": "string", "minLength": 3, "maxLength": 160},
+    "module_id": {"type": "string", "minLength": 3, "maxLength": 128},
     "stage": {
-      "type": "string"
+      "enum": ["intake", "restart", "interview", "specify", "decide", "harvest", "import", "trace", "map", "model", "generate", "test", "validate", "adapt", "ingest", "diagnose", "repair", "review", "release", "learn", "learn_review", "learn_promotion", "complete"]
     },
     "status": {
-      "type": "string"
+      "enum": ["READY", "RUNNING", "PASS", "FAIL", "BLOCKED", "PENDING_HUMAN_APPROVAL", "APPROVED", "REJECTED", "ABANDONED_BY_USER_RESET"]
     },
-    "attempts": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 3
-    },
-    "history": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
+    "attempts": {"type": "integer", "minimum": 0, "maximum": 3},
+    "history": {"type": "array", "items": {"type": "object"}},
+    "human_gate": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gate_type", "subject_kind", "subject_id", "candidate_commit", "review_id", "decision", "actor_identity", "actor_role", "recorded_at"],
+          "properties": {
+            "gate_type": {"const": "learning_promotion"},
+            "subject_kind": {"enum": ["pattern", "skill_proposal"]},
+            "subject_id": {"type": "string", "minLength": 3, "maxLength": 128},
+            "candidate_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+            "review_id": {"type": "string", "minLength": 1, "maxLength": 128},
+            "decision": {"enum": ["PENDING", "APPROVED", "REJECTED"]},
+            "actor_identity": {"type": ["string", "null"], "maxLength": 200},
+            "actor_role": {"oneOf": [{"const": "human_approver"}, {"type": "null"}]},
+            "recorded_at": {"type": ["string", "null"], "format": "date-time"}
+          }
+        }
+      ]
     }
   },
+  "allOf": [
+    {
+      "if": {"properties": {"stage": {"const": "learn_promotion"}}, "required": ["stage"]},
+      "then": {
+        "required": ["human_gate"],
+        "properties": {
+          "status": {"enum": ["PENDING_HUMAN_APPROVAL", "APPROVED", "REJECTED"]},
+          "human_gate": {"type": "object"}
+        }
+      }
+    }
+  ],
   "additionalProperties": true
 }

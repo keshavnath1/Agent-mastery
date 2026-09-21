@@ -21,6 +21,9 @@ control_rules:
   stop_at_human_gate: true
   self_approval_forbidden: true
   protected_evidence_mutation_forbidden: true
+  learning_memory_advisory_only: true
+  learning_independent_run_minimum: 2
+  learning_promotion_human_only: true
   maximum_repair_attempts: 3
   stop_same_failure_without_new_evidence: 2
 acts:
@@ -70,6 +73,28 @@ recovery_loop:
   require_loop_contract: true
   require_isolated_worktree: true
   rerun_earliest_failed_gate: true
+learning_control:
+  prepare_skill: learn
+  review_skill: review
+  review_stage: learn_review
+  promotion_stage: learn_promotion
+  transitions:
+    - from: learn
+      on: PROPOSAL_VALIDATED
+      to: learn_review
+      authorized_skill: review
+    - from: learn_review
+      on: ACCEPT
+      to: learn_promotion
+      status: PENDING_HUMAN_APPROVAL
+    - from: learn_promotion
+      on: HUMAN_APPROVED
+      to: complete
+      status: APPROVED
+    - from: learn_promotion
+      on: HUMAN_REJECTED
+      to: complete
+      status: REJECTED
 canonical_artifacts:
   intake_manifest: artifacts/evidence/intake_manifest.json
   migration_profile: config/migration_profile.yaml
@@ -86,7 +111,13 @@ canonical_artifacts:
   tieout_summary: artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md
   evidence: artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/evidence.json
   release_packet: artifacts/releases/<run-id>/release_packet.md
-  learning_record: artifacts/learning/<module>.md
+  learning_observation: artifacts/learning/observations/<observation-id>.json
+  learning_pattern: docs/learning/patterns/<pattern-id>.md
+  skill_change_proposal: artifacts/learning/proposals/<proposal-id>.json
+  learning_review: artifacts/learning/reviews/<review-id>.json
+  learning_index: docs/learning/index.md
+  learning_evolution_log: docs/learning/evolution-log.md
+  learning_skill_impact: docs/learning/skill-impact.md
 human_gates:
   - after: interview
     approval: migration intent and tie-out population confirmation when local parity is requested
@@ -105,7 +136,7 @@ human_gates:
   - after: review
     approval: merge or release decision
   - before: learn_promotion
-    approval: pattern or skill promotion
+    approval: explicit human pattern or atomic skill promotion bound to the independent review and candidate commit
 stage_result_fields:
   - module
   - run

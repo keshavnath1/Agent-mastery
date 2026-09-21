@@ -30,6 +30,9 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertTrue(rules["stop_at_human_gate"])
         self.assertTrue(rules["self_approval_forbidden"])
         self.assertTrue(rules["deterministic_tools_invoked_by_skill"])
+        self.assertTrue(rules["learning_memory_advisory_only"])
+        self.assertEqual(rules["learning_independent_run_minimum"], 2)
+        self.assertTrue(rules["learning_promotion_human_only"])
 
     def test_clean_template_has_no_active_module_or_approved_contract(self) -> None:
         project = yaml.safe_load((ROOT / "config/project.yaml").read_text(encoding="utf-8"))
@@ -103,6 +106,10 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertEqual(artifacts["implementation"], "src/sas_migration/semantic/")
         self.assertEqual(artifacts["tieout_result"], "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_result.json")
         self.assertEqual(artifacts["tieout_summary"], "artifacts/evidence/runs/<run-id>/attempts/<attempt-id>/tieout_summary.md")
+        self.assertEqual(artifacts["learning_observation"], "artifacts/learning/observations/<observation-id>.json")
+        self.assertEqual(artifacts["learning_pattern"], "docs/learning/patterns/<pattern-id>.md")
+        self.assertEqual(artifacts["skill_change_proposal"], "artifacts/learning/proposals/<proposal-id>.json")
+        self.assertEqual(artifacts["learning_review"], "artifacts/learning/reviews/<review-id>.json")
 
     def test_interview_requires_human_population_choice(self) -> None:
         choices = {
@@ -164,6 +171,38 @@ class AgentWorkflowContractTests(unittest.TestCase):
         self.assertTrue(recovery["require_loop_contract"])
         self.assertTrue(recovery["require_isolated_worktree"])
         self.assertEqual(self.workflow["control_rules"]["maximum_repair_attempts"], 3)
+
+    def test_governed_learning_memory_is_present_but_inert(self) -> None:
+        for relative in [
+            "contracts/learning_observation.schema.json",
+            "contracts/learning_pattern.schema.json",
+            "contracts/skill_change_proposal.schema.json",
+            "contracts/learning_review.schema.json",
+            "scripts/validate_learning_memory.py",
+            "docs/learning/WIKI_CONTRACT.md",
+            "docs/runbooks/GOVERNED_LEARNING.md",
+            ".github/skills/learn/evals/cases.md",
+        ]:
+            self.assertTrue((ROOT / relative).is_file(), relative)
+
+        learn = (ROOT / ".github/skills/learn/SKILL.md").read_text(encoding="utf-8")
+        contract = (ROOT / "docs/learning/WIKI_CONTRACT.md").read_text(encoding="utf-8")
+        pressure = (ROOT / ".github/skills/learn/evals/cases.md").read_text(encoding="utf-8")
+        self.assertIn("at least two independent run IDs", learn)
+        self.assertIn("exactly one", learn)
+        self.assertIn("learn_promotion / PENDING_HUMAN_APPROVAL", learn)
+        self.assertIn("advisory", contract.lower())
+        self.assertIn("Hidden reasoning capture", pressure)
+        self.assertIn("Cross-model negative transfer", pressure)
+
+        control = self.workflow["learning_control"]
+        self.assertEqual(control["review_stage"], "learn_review")
+        self.assertEqual(control["promotion_stage"], "learn_promotion")
+        self.assertEqual(control["transitions"][1]["status"], "PENDING_HUMAN_APPROVAL")
+
+        for relative in ["artifacts/learning/observations", "artifacts/learning/proposals", "artifacts/learning/reviews", "docs/learning/patterns"]:
+            files = [path for path in (ROOT / relative).rglob("*") if path.is_file() and path.name != ".gitkeep"]
+            self.assertEqual(files, [], relative)
 
     def test_all_prompt_routers_exist_and_use_orchestrate(self) -> None:
         for name in [

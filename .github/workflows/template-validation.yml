@@ -1,0 +1,55 @@
+name: Template validation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install framework
+        run: python -m pip install -e .
+      - name: Validate clean reusable template
+        run: python scripts/smoke_test.py
+      - name: Validate learning history from trusted base
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}"
+            BASE_REF="$(git merge-base HEAD "origin/${{ github.base_ref }}")"
+          else
+            BASE_REF="$(git rev-parse HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)"
+          fi
+          python scripts/validate_learning_memory.py --all --base-ref "$BASE_REF"
+      - name: Reject active governed-learning records on public template
+        shell: bash
+        run: |
+          if find artifacts/learning/observations artifacts/learning/proposals artifacts/learning/reviews docs/learning/patterns \
+              -type f ! -name '.gitkeep' -print | grep -q .; then
+            echo 'Active governed-learning records belong on an access-controlled program branch, not the public template.' >&2
+            exit 1
+          fi
+      - name: Reject source and business-data extensions
+        run: |
+          if find . -path './.git' -prune -o -type f \( -iname '*.sas' -o -iname '*.log' -o -iname '*.lst' -o -iname '*.csv' \) -print | grep -q .; then
+            echo 'Forbidden source or business-data extension found in reusable branch.' >&2
+            exit 1
+          fi
+      - name: Scan common secret formats
+        run: |
+          if git grep -n -I -E '(AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|password[[:space:]]*[:=][[:space:]]*[^< ]+|api[_-]?key[[:space:]]*[:=][[:space:]]*[^< ]+)' -- . ':!*.pdf'; then
+            echo 'Potential secret material found.' >&2
+            exit 1
+          fi

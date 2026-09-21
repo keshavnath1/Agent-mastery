@@ -79,6 +79,14 @@ def main() -> int:
     tieout_parser.add_argument("--run-id", required=True, help="Existing durable run identifier")
     tieout_parser.add_argument("--attempt-id", required=True, help="Append-only validation attempt identifier")
     tieout_parser.add_argument("--contract", default="config/tieout.yaml", help="Repository-relative approved contract")
+    learning_parser = sub.add_parser("learning-validate")
+    learning_parser.add_argument("--observation", action="append", default=[], help="Repository-relative learning observation")
+    learning_parser.add_argument("--pattern", action="append", default=[], help="Repository-relative learning pattern")
+    learning_parser.add_argument("--proposal", action="append", default=[], help="Repository-relative skill-change proposal")
+    learning_parser.add_argument("--review", action="append", default=[], help="Repository-relative independent learning review")
+    learning_parser.add_argument("--all", action="store_true", help="Validate every active learning-memory artifact")
+    learning_parser.add_argument("--templates", action="store_true", help="Validate only the committed inert templates")
+    learning_parser.add_argument("--base-ref", help="Require learning indexes and logs to be append-only from this commit")
     args = parser.parse_args()
 
     if args.command == "validate":
@@ -93,6 +101,18 @@ def main() -> int:
         return start(args.module)
     if args.command == "tieout":
         return run("run_tieout.py", "--contract", args.contract, "--run-id", args.run_id, "--attempt-id", args.attempt_id)
+    if args.command == "learning-validate":
+        options: list[str] = []
+        for flag, values in (("--observation", args.observation), ("--pattern", args.pattern), ("--proposal", args.proposal), ("--review", args.review)):
+            for value in values:
+                options.extend([flag, value])
+        if args.all:
+            options.append("--all")
+        if args.templates:
+            options.append("--templates")
+        if args.base_ref:
+            options.extend(["--base-ref", args.base_ref])
+        return run("validate_learning_memory.py", *options)
     return 2
 
 
